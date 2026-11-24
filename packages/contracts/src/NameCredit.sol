@@ -15,8 +15,8 @@ import {IAgentIdRegistry} from "./interfaces/IAgentIdRegistry.sol";
 ///         The pool is funded by the owner alone. This contract never holds anyone else's money.
 /// @dev    Owner powers, all of them: add BNB, pause new advances, withdraw BNB held here, schedule a change to
 ///         the four settings inside the limits below (effective after SETTINGS_DELAY, and only for
-///         SETTINGS_WINDOW after that), issue and revoke passes that skip the release pace, recover tokens
-///         sent here by mistake, and hand over ownership in two steps.
+///         SETTINGS_WINDOW after that) or cancel a scheduled one, issue and revoke passes that skip the
+///         release pace, recover tokens sent here by mistake, and hand over ownership in two steps.
 ///         The owner cannot change a borrower's record, alter an open advance, or stop anyone repaying.
 contract NameCredit is Ownable2Step, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -164,8 +164,8 @@ contract NameCredit is Ownable2Step, Pausable, ReentrancyGuard {
     /// @dev Pace credit is counted in advance-seconds: one first-step advance costs one day of credit at a pace of one.
     uint256 private constant SLOT = 1 days;
     /// @dev Unused pace builds up for at most this long, or for one advance if that is longer, so a quiet
-    ///      night cannot be spent in one block. Below 24 a day one hour of pace is less than one advance,
-    ///      and the store is then exactly one advance.
+    ///      night cannot be spent in one block. From 1 to 23 a day one hour of pace is less than one
+    ///      advance, and the store then holds exactly one. At a pace of zero it holds nothing.
     uint256 private constant PACE_BURST = 1 hours;
 
     /// @notice The Agent ID registry this contract reads. Fixed at deployment.
