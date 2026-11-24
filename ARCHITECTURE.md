@@ -67,11 +67,11 @@ flowchart TD
 |---|---|---|
 | BNB Smart Chain mainnet | Agent ID registry (not ours) | `0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F` |
 | BNB Smart Chain mainnet | NameCredit | not deployed yet |
-| BNB Smart Chain testnet | NameCredit | [`0x593EFd791758130B41FA9BA1eF3DCB2bC6CC0Eb9`](https://testnet.bscscan.com/address/0x593EFd791758130B41FA9BA1eF3DCB2bC6CC0Eb9), [verified source](https://repo.sourcify.dev/97/0x593EFd791758130B41FA9BA1eF3DCB2bC6CC0Eb9) |
-| BNB Smart Chain testnet | Stand-in Agent ID registry | [`0x7aB1fEfb78706e77354a3c579815DC26dBD1E9C5`](https://testnet.bscscan.com/address/0x7aB1fEfb78706e77354a3c579815DC26dBD1E9C5), [verified source](https://repo.sourcify.dev/97/0x7aB1fEfb78706e77354a3c579815DC26dBD1E9C5) |
-| BNB Smart Chain testnet | Attack runner | [`0xBFfEf6fD3a051fbAB2Ba76F786FCBF2cE0cFA8Fc`](https://testnet.bscscan.com/address/0xBFfEf6fD3a051fbAB2Ba76F786FCBF2cE0cFA8Fc), [verified source](https://repo.sourcify.dev/97/0xBFfEf6fD3a051fbAB2Ba76F786FCBF2cE0cFA8Fc) |
+| BNB Smart Chain testnet | NameCredit | [`0xEa15E229636752Eb2Af77cC0bBc58F236f676291`](https://testnet.bscscan.com/address/0xEa15E229636752Eb2Af77cC0bBc58F236f676291), [verified source](https://repo.sourcify.dev/97/0xEa15E229636752Eb2Af77cC0bBc58F236f676291) |
+| BNB Smart Chain testnet | Stand-in Agent ID registry | [`0x71760a997dd55a54fC709A67E276AA07e781eC50`](https://testnet.bscscan.com/address/0x71760a997dd55a54fC709A67E276AA07e781eC50), [verified source](https://repo.sourcify.dev/97/0x71760a997dd55a54fC709A67E276AA07e781eC50) |
+| BNB Smart Chain testnet | Attack runner | [`0x353cd4471a9a1A8Ff9CcaF94DE7d60A4AAe012eb`](https://testnet.bscscan.com/address/0x353cd4471a9a1A8Ff9CcaF94DE7d60A4AAe012eb), [verified source](https://repo.sourcify.dev/97/0x353cd4471a9a1A8Ff9CcaF94DE7d60A4AAe012eb) |
 
-Agent ID exists on mainnet only. The testnet registry is a stand-in deployed from the real registry's verified source, owned by a testnet-only wallet so that test names can be issued. The testnet pool runs with a 1 hour term and a pace of 24 a day, so that the attack scripts can exhaust the pace and reach a late payment in a day; the mainnet pool is planned with a 3 day term and a pace of 100 a day. The record of the testnet run is in `security/outputs/`.
+Agent ID exists on mainnet only. The testnet registry is a stand-in deployed from the real registry's verified source, with the same name lengths (3 to 20) and owned by a testnet-only wallet so that test names can be issued. The testnet pool runs with a 1 hour term and a pace of 24 a day, so that the attack scripts can exhaust the pace and reach a late payment in a day; the mainnet pool is planned with a 3 day term and a pace of 100 a day. The record of the testnet run is in `security/outputs/`.
 
 ## The interface the site and the agent skill use
 
@@ -96,21 +96,24 @@ Writes a holder's agent makes:
 | Call | BNB attached | Calldata |
 |---|---|---|
 | `borrow()` | 0 | `0xe68d3569`, the same four bytes for everyone |
-| `borrowWithPass(bytes32 code)` | 0 | `0x5735ce7b` plus the 32 byte code |
+| `borrowWithPass(bytes32 code)` | 0 | `0x5735ce7b` plus the 32 byte code. First advance only: above the first step it is refused with `PassNotNeeded` and the plain `borrow()` is the call to make |
 | `repay(address borrower)` | exactly `standingOf(borrower).owed` | `0x9f7c73e9` plus the borrower address |
 
 The site and the skill take these from the compiled ABI at build time. They are listed here so that anyone can check an instruction by eye.
 
-Writes anyone may make: `repay(address)`, `markMissed(address)`, `markMissedMany(address[])`, `applySettings()`.
+Writes anyone may make: `repay(address)`, `markMissed(address)`, `markMissedMany(address[])`, and `applySettings()`, which works from 12 hours after a change is scheduled until 7 days after that.
 
 Writes only the owner may make: `topUp()`, `withdraw(uint256)`, `pause()`, `unpause()`, `scheduleSettings(Settings)`, `cancelSettings()`, `addPasses(bytes32[], uint40)`, `revokePass(bytes32)`, `rescueToken(address, uint256)`, `transferOwnership(address)` then `acceptOwnership()` by the new owner.
 
-## Gas, measured in the test suite at 0.05 gwei and BNB at 559.51 dollars
+## Gas
 
-| Action | Gas | BNB | Dollars |
+Gas used is taken from real transactions on BNB testnet on 24 November 2026 (hashes in `security/outputs/`). The BNB and dollar columns price that gas at what mainnet charged on 23 November: 0.05 gwei, with BNB at 559.51 dollars.
+
+| Action | Gas used | BNB | Dollars |
 |---|---|---|---|
-| First advance, typical | 162,673 | 0.0000081 | 0.005 |
-| First advance, worst case seen | 284,353 | 0.0000142 | 0.008 |
-| Repay, typical | 61,775 | 0.0000031 | 0.002 |
-| Mark missed | 24,554 | 0.0000012 | 0.001 |
-| Deploy (estimate from a dry run on a mainnet fork) | 4,354,138 | 0.00022 | 0.12 |
+| First advance (with a pass, sent through a small wallet contract) | 160,283 | 0.0000080 | 0.0045 |
+| Repay | 58,956 | 0.0000029 | 0.0016 |
+| Deploy | 3,376,974 | 0.00017 | 0.094 |
+| Mark missed | about 45,000 | 0.0000023 | 0.0013 |
+
+The mark missed figure is not from a live transaction: it is the 24,000 gas the test suite measures for the call plus the 21,000 every transaction pays. A first advance costs more when the storage it touches has never been written, which is the usual case and the one measured here.
