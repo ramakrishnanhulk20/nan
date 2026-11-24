@@ -1,0 +1,36 @@
+# planning and working files, never published
+CLAUDE.md
+AGENT-RETROS.md
+INTAKE.md
+PLAN.md
+STATE.md
+DECISIONS.md
+SPEC.md
+docs/RD-BRIEF.md
+docs/AUDIT-PACKET.md
+.claude/
+scratchpad/
+reference/
+
+# secrets
+.env
+.env.*
+!.env.example
+
+# dependencies and build output
+node_modules/
+dependencies/
+out/
+cache/
+broadcast/
+coverage/
+lcov.info
+.next/
+.next-verify/
+dist/
+
+# editor and OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
