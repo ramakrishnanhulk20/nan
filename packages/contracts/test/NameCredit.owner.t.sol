@@ -317,6 +317,30 @@ contract NameCreditOwnerTest is Base {
         credit.borrow();
     }
 
+    /// A faster pace raises the ceiling of the store but must not fill it: the unused pace earned at the
+    /// old rate is all there is on the day of the change.
+    function test_settings_aFasterPaceDoesNotRefillTheStore() public {
+        assertEq(credit.pool().slotsNow, 4, "full at 100 a day: one hour of pace is four advances");
+        vm.prank(owner);
+        credit.scheduleSettings(NameCredit.Settings({firstAdvance: FIRST, cap: CAP, term: TERM, pacePerDay: 200}));
+        skip(12 hours);
+        credit.applySettings();
+        assertEq(credit.pool().slotsNow, 4, "still four, not the eight the new ceiling allows");
+
+        for (uint256 i; i < 4; ++i) {
+            _borrow(_holder(string(abi.encodePacked("fast", vm.toString(i)))));
+        }
+        address fifth = _holder("fastlast");
+        vm.prank(fifth);
+        vm.expectPartialRevert(NameCredit.PaceExhausted.selector);
+        credit.borrow();
+
+        skip(1 hours);
+        assertEq(credit.pool().slotsNow, 8, "an hour at the new pace fills the store to the new ceiling and no further");
+        skip(1 hours);
+        assertEq(credit.pool().slotsNow, 8);
+    }
+
     function test_settings_aLowerCapPullsTheLadderDown() public {
         _borrow(alice);
         _repay(alice);
