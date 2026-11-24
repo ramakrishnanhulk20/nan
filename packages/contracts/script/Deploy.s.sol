@@ -7,8 +7,10 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {NameCredit} from "../src/NameCredit.sol";
 import {HandleRegistry} from "../test/mocks/HandleRegistry.sol";
 
-/// @notice Deploys NameCredit and, when it really broadcasts, writes the addresses to
-///         deployments/<chain id>.json. A dry run writes nothing.
+/// @notice Deploys NameCredit and, when run with --broadcast, writes the addresses to
+///         deployments/<chain id>.json. A dry run writes nothing. The file is written before the
+///         transactions are confirmed, so if a broadcast fails part-way, delete it: the scripts that read
+///         it check the chain first and stop when the address holds no pool.
 ///         On BNB Smart Chain mainnet it uses the real Agent ID registry and the settings written below.
 ///         On BNB testnet, where no Agent ID registry exists, it first deploys a stand-in from the registry's
 ///         own verified source, owned by the deployer so that test names can be issued.
@@ -21,6 +23,9 @@ import {HandleRegistry} from "../test/mocks/HandleRegistry.sol";
 ///         FIRST_ADVANCE_WEI, CAP_WEI, TERM_SECONDS and PACE_PER_DAY so the attack scripts can use a short term.
 contract Deploy is Script {
     address internal constant MAINNET_REGISTRY = 0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F;
+    /// @dev This project's testnet-only wallet. Its key sits in a file, so it must never own a mainnet pool.
+    ///      Written here so the check does not depend on the environment being loaded.
+    address internal constant TESTNET_ONLY_WALLET = 0xF6010Cf5E9d5a33531ae0479c33aA48d958eFfA5;
     uint256 internal constant BSC_MAINNET = 56;
     uint256 internal constant BSC_TESTNET = 97;
 
@@ -43,7 +48,8 @@ contract Deploy is Script {
                 "mainnet uses the settings written in this script: unset FIRST_ADVANCE_WEI, CAP_WEI, TERM_SECONDS and PACE_PER_DAY"
             );
             require(
-                owner != vm.envOr("SECURITY_TESTNET_ADDRESS", address(0)), "OWNER is the testnet-only wallet, which must never own a mainnet pool"
+                owner != TESTNET_ONLY_WALLET && owner != vm.envOr("SECURITY_TESTNET_ADDRESS", address(0)),
+                "OWNER is the testnet-only wallet, which must never own a mainnet pool"
             );
             require(
                 owner == vm.envOr("CONFIRM_MAINNET_OWNER", address(0)), "set CONFIRM_MAINNET_OWNER to the same address as OWNER"
