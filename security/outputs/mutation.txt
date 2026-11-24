@@ -1,0 +1,50 @@
+run started 2026-11-23T10:12:48.953Z
+unchanged source: Ran 5 test suites in 2.54s (4.56s CPU time): 78 tests passed, 0 failed, 0 skipped (78 total tests)
+
+CAUGHT    on-time boundary moved by one second -> 1 failed: test_repay_lastSecondOfGraceIsOnTime
+CAUGHT    one advance per term removed -> 4 failed: test_quoteBorrow_namesTheFirstRuleThatStopsAnAdvance, test_repay_lastSecondOfGraceIsOnTime, test_repay_onTimeMovesUpOneStepAndWaitsOutTheTerm, testFuzz_repaymentTimeDecidesTheOutcome
+CAUGHT    newcomers' reserve removed -> 1 failed: test_reserve_aRepeatBorrowerLeavesOneDayOfFirstAdvances
+CAUGHT    a pass can be used again -> 1 failed: test_pass_skipsThePaceOnceAndOnlyOnce
+CAUGHT    name's owner not compared with the caller -> 2 failed: testFuzz_anyOwnerAnswerButTheCallerIsRefused, test_ownerOf_revertMismatchOrDirtyIsRefused
+CAUGHT    late repayment keeps the step -> 1 failed: test_repay_oneSecondAfterGraceIsLate
+CAUGHT    no cooling-off after a late repayment -> 2 failed: test_repay_oneSecondAfterGraceIsLate, testFuzz_repaymentTimeDecidesTheOutcome
+CAUGHT    markMissed allowed one second early -> 1 failed: test_markMissed_onlyAfterGraceAndOnlyOnce
+CAUGHT    second advance while one is open -> 3 failed: test_borrow_refusesASecondAdvanceWhileOneIsOpen, test_markMissed_onlyAfterGraceAndOnlyOnce, test_pass_doesNotWaiveAnyOtherRule
+CAUGHT    pace never used up -> 6 failed: test_settings_storedPaceIsHeldToTheNewCeiling, test_pace_doesNotApplyAboveTheFirstStep, test_pace_fifthFirstAdvanceInOneBlockMustWait, test_quoteBorrow_namesTheFirstRuleThatStopsAnAdvance
+CAUGHT    oversized registry reply accepted -> 2 failed: test_balance_revertZeroOrWrongSizeIsRefused, test_ownerOf_revertMismatchOrDirtyIsRefused
+CAUGHT    settings applied without the delay -> 2 failed: test_settings_aSecondScheduleRestartsTheDelay, test_settings_scheduleThenApplyAfterTheDelay
+CAUGHT    anyone can withdraw -> 1 failed: test_withdraw_ownerOnlyAndOnlyWhatIsHere
+CAUGHT    step keeps rising at the cap -> 3 failed: test_ladder_climbsToTheCapAndStopsThere, test_settings_aLowerCapPullsTheLadderDown, testFuzz_everyAdvanceSitsBetweenTheFirstAdvanceAndTheCap
+CAUGHT    missed count not corrected on late repayment -> 2 failed: test_markMissed_aLaterRepaymentTurnsItIntoLate, test_handlerReallyLendsRepaysAndMarks
+CAUGHT    non-canonical name reply accepted -> 1 failed: test_handle_revertEmptyOrMalformedIsRefused
+CAUGHT    name length ceiling removed -> 1 failed: test_handle_revertEmptyOrMalformedIsRefused
+CAUGHT    stored pace has no ceiling -> 2 failed: test_pace_doesNotApplyAboveTheFirstStep, test_pace_unusedSlotsStopBuildingAfterOneHour
+CAUGHT    a changed name is accepted -> 1 failed: test_aNameThatChangesIsRefused
+CAUGHT    repayment can be paused -> 2 failed: test_pause_ownerOnlyStopsNewAdvancesNotRepayment, test_repay_worksWhilePaused
+CAUGHT    repayment does not clear the debt -> 18 failed: test_settings_aLowerCapPullsTheLadderDown, test_ladder_climbsToTheCapAndStopsThere, test_pace_doesNotApplyAboveTheFirstStep, test_quoteBorrow_namesTheFirstRuleThatStopsAnAdvance
+CAUGHT    limit grows in a line, not by doubling -> 3 failed: test_settings_aLowerCapPullsTheLadderDown, test_ladder_climbsToTheCapAndStopsThere, testFuzz_everyAdvanceSitsBetweenTheFirstAdvanceAndTheCap
+CAUGHT    extra BNB kept instead of returned -> 4 failed: test_repay_extraIsReturnedToThePayer, test_repay_reenteringOnTheRefundFails, testFuzz_repaymentTimeDecidesTheOutcome, test_handlerReallyLendsRepaysAndMarks
+CAUGHT    zero balance in the registry accepted -> 1 failed: test_balance_revertZeroOrWrongSizeIsRefused
+CAUGHT    anyone can top up -> 1 failed: test_topUp_ownerOnlyAndCounted
+CAUGHT    an advance can be marked missed twice -> 1 failed: test_markMissed_onlyAfterGraceAndOnlyOnce
+CAUGHT    expired pass accepted -> 1 failed: test_pass_unknownExpiredOrRevokedIsRefused
+CAUGHT    release pace never checked -> 7 failed: test_pace_doesNotApplyAboveTheFirstStep, test_pace_fifthFirstAdvanceInOneBlockMustWait, test_quoteBorrow_namesTheFirstRuleThatStopsAnAdvance, test_views_holdsAgentIdAndPool
+CAUGHT    plain transfers accepted -> 1 failed: test_plainTransferIsRefused
+CAUGHT    registry read has no gas ceiling -> 4 failed: test_balance_aFloodOfReturnDataIsRefused, test_balance_aRegistryThatSpinsCostsTheCallerABoundedAmount, test_handle_spinOrFloodIsRefused, test_ownerOf_revertMismatchOrDirtyIsRefused
+CAUGHT    outstanding total not reduced on repayment -> 1 failed: test_repay_onTimeMovesUpOneStepAndWaitsOutTheTerm
+CAUGHT    empty pool not checked before paying out -> 2 failed: test_borrow_refusesWhenThePoolIsShort, test_reserve_aRepeatBorrowerLeavesOneDayOfFirstAdvances
+CAUGHT    cap limit not enforced on settings -> 2 failed: test_settings_outOfBoundsRefusedAndCancelWorks, testFuzz_settingsNearTheLimits
+CAUGHT    first advance floor not enforced on settings -> 3 failed: test_constructor_refusesSettingsOutsideTheLimits, testFuzz_settingsAreAcceptedExactlyInsideTheLimits, testFuzz_settingsNearTheLimits
+CAUGHT    term ceiling not enforced on settings -> 1 failed: testFuzz_settingsNearTheLimits
+CAUGHT    pace ceiling not enforced on settings -> 1 failed: testFuzz_settingsNearTheLimits
+CAUGHT    missed flag never set -> 7 failed: test_handlerReallyLendsRepaysAndMarks, test_theRealRegistryReplacedByBrokenCodeCannotBlockRepayment, test_pause_doesNotStopMarkingMissed, test_markMissedMany_marksOnlyTheOverdueOnes
+CAUGHT    ownership can be renounced -> 1 failed: test_ownership_movesInTwoStepsAndCannotBeRenounced
+CAUGHT    withdrawals not counted -> 1 failed: test_withdraw_ownerOnlyAndOnlyWhatIsHere
+CAUGHT    batch limit removed on marking -> 1 failed: test_markMissedMany_marksOnlyTheOverdueOnes
+CAUGHT    underpayment accepted -> 3 failed: test_repay_refusesLessThanOwed, test_settings_anOpenAdvanceKeepsItsTerms, testFuzz_aStrangerCanOnlySettleNeverSpoil
+CAUGHT    name reply with a wrong offset accepted -> 1 failed: test_handle_revertEmptyOrMalformedIsRefused
+CAUGHT    stranger can issue passes -> 1 failed: test_addPasses_ownerOnlyWithLimits
+CAUGHT    stranger can schedule settings -> 1 failed: test_settings_scheduleThenApplyAfterTheDelay
+CAUGHT    stranger can pause -> 2 failed: test_ownership_movesInTwoStepsAndCannotBeRenounced, test_pause_ownerOnlyStopsNewAdvancesNotRepayment
+
+mutations 45, caught 45, survived 0, not run 0
