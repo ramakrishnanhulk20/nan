@@ -14,8 +14,9 @@ import {IAgentIdRegistry} from "./interfaces/IAgentIdRegistry.sol";
 ///         A wallet has one name for life, so a borrower who does not repay cannot start again as someone new.
 ///         The pool is funded by the owner alone. This contract never holds anyone else's money.
 /// @dev    Owner powers, all of them: add BNB, pause new advances, withdraw BNB held here, schedule a change to
-///         the four settings inside the limits below (effective after SETTINGS_DELAY), issue and revoke passes
-///         that skip the release pace, recover tokens sent here by mistake, and hand over ownership in two steps.
+///         the four settings inside the limits below (effective after SETTINGS_DELAY, and only for
+///         SETTINGS_WINDOW after that), issue and revoke passes that skip the release pace, recover tokens
+///         sent here by mistake, and hand over ownership in two steps.
 ///         The owner cannot change a borrower's record, alter an open advance, or stop anyone repaying.
 contract NameCredit is Ownable2Step, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -129,6 +130,9 @@ contract NameCredit is Ownable2Step, Pausable, ReentrancyGuard {
     uint256 public constant COOLING_OFF = 7 days;
     /// @notice Wait between scheduling new settings and their taking effect.
     uint256 public constant SETTINGS_DELAY = 12 hours;
+    /// @notice How long scheduled settings can still be applied once the delay has passed. After that they lapse
+    ///         and must be scheduled again, so a change never arrives long after its public notice.
+    uint256 public constant SETTINGS_WINDOW = 7 days;
 
     /// @notice The smallest first advance the owner may set, in wei.
     uint96 public constant MIN_FIRST_ADVANCE = 0.00005 ether;
@@ -159,7 +163,9 @@ contract NameCredit is Ownable2Step, Pausable, ReentrancyGuard {
     uint8 private constant MAX_STEP = 15;
     /// @dev Pace credit is counted in advance-seconds: one first-step advance costs one day of credit at a pace of one.
     uint256 private constant SLOT = 1 days;
-    /// @dev Unused pace builds up for at most this long, so a quiet night cannot be spent in one block.
+    /// @dev Unused pace builds up for at most this long, or for one advance if that is longer, so a quiet
+    ///      night cannot be spent in one block. Below 24 a day one hour of pace is less than one advance,
+    ///      and the store is then exactly one advance.
     uint256 private constant PACE_BURST = 1 hours;
 
     /// @notice The Agent ID registry this contract reads. Fixed at deployment.
@@ -278,8 +284,13 @@ contract NameCredit is Ownable2Step, Pausable, ReentrancyGuard {
     /// @notice The delay has not passed.
     /// @param effectiveAt The earliest time the settings can be applied.
     error TooSoon(uint256 effectiveAt);
+    /// @notice The delay passed more than `SETTINGS_WINDOW` ago. The settings must be scheduled again.
+    /// @param lapsedAt The last moment they could have been applied.
+    error SettingsLapsed(uint256 lapsedAt);
     /// @notice The pass is unknown, used, revoked or expired.
     error BadPass();
+    /// @notice The caller is above the first step, where there is no release pace to skip. Call `borrow`.
+    error PassNotNeeded();
     /// @notice The expiry is not in the future.
     error BadExpiry();
     /// @notice More entries than `MAX_BATCH`.
@@ -323,12 +334,16 @@ contract NameCredit is Ownable2Step, Pausable, ReentrancyGuard {
         return _borrow(false);
     }
 
-    /// @notice Take an advance using a single-use pass, which skips the release pace and nothing else.
-    /// @dev    Reverts `BadPass` if the code is unknown, used or expired. Every other rule of `borrow` applies.
-    ///         A code seen in a pending transaction could be used first by another Agent ID holder.
+    /// @notice Take a first-step advance using a single-use pass, which skips the release pace and nothing else.
+    /// @dev    Reverts `PassNotNeeded` above the first step and `BadPass` if the code is unknown, used or
+    ///         expired. Every other rule of `borrow` applies. A code seen in a pending transaction could be
+    ///         used first by another Agent ID holder who is at the first step.
     /// @param code The secret whose hash the owner registered with `addPasses`.
     /// @return amount The BNB sent to the caller, in wei.
     function borrowWithPass(bytes32 code) external nonReentrant whenNotPaused returns (uint256 amount) {
+        // The pace only exists at the first step. Without this, a repeat borrower could spend a newcomer's
+        // code that it saw in a pending transaction and lose nothing by it.
+        if (_accounts[msg.sender].step != 0) revert PassNotNeeded();
         bytes32 passHash = keccak256(abi.encode(code));
         uint256 expires = _passExpiry[passHash];
         if (expires == 0 || expires < block.timestamp) revert BadPass();
@@ -568,7 +583,8 @@ contract NameCredit is Ownable2Step, Pausable, ReentrancyGuard {
         _unpause();
     }
 
-    /// @notice Schedule new settings. They take effect only after `SETTINGS_DELAY`, through `applySettings`.
+    /// @notice Schedule new settings. They take effect only after `SETTINGS_DELAY`, through `applySettings`,
+    ///         and lapse if nobody applies them within `SETTINGS_WINDOW` after that.
     /// @dev    Reverts `SettingsOutOfBounds`. Replaces anything already scheduled. Emits `SettingsScheduled`.
     /// @param next The settings to schedule.
     function scheduleSettings(Settings calldata next) external onlyOwner {
@@ -588,14 +604,16 @@ contract NameCredit is Ownable2Step, Pausable, ReentrancyGuard {
     }
 
     /// @notice Put the scheduled settings into force once the delay has passed. Anyone may call.
-    /// @dev    Open advances keep the amount and due time they were made with. Reverts `NothingScheduled` or
-    ///         `TooSoon`. Emits `SettingsApplied`.
+    /// @dev    Works from the end of the delay until `SETTINGS_WINDOW` later. Open advances keep the amount
+    ///         and due time they were made with. Reverts `NothingScheduled`, `TooSoon` or `SettingsLapsed`.
+    ///         Emits `SettingsApplied`.
     function applySettings() external {
         uint256 effectiveAt = pendingSettingsAt;
         // Zero is the marker for "nothing scheduled", not a time being compared.
         // slither-disable-next-line incorrect-equality
         if (effectiveAt == 0) revert NothingScheduled();
         if (block.timestamp < effectiveAt) revert TooSoon(effectiveAt);
+        if (block.timestamp > effectiveAt + SETTINGS_WINDOW) revert SettingsLapsed(effectiveAt + SETTINGS_WINDOW);
         Settings memory next = pendingSettings;
         // Credit earned under the old pace is settled first, then held to the new ceiling.
         uint256 credit = _paceNow(settings.pacePerDay);
