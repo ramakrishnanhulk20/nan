@@ -2,33 +2,46 @@ NameCredit on BNB testnet (chain 97). Run of 24 November 2026.
 Explorer: https://testnet.bscscan.com/address/<address> or /tx/<hash>
 Verified source: https://repo.sourcify.dev/97/<address>
 
-Contracts, all three verified on Sourcify with an exact match
-  NameCredit                      0x593EFd791758130B41FA9BA1eF3DCB2bC6CC0Eb9
-  stand-in Agent ID registry      0x7aB1fEfb78706e77354a3c579815DC26dBD1E9C5
-  attack runner                   0xBFfEf6fD3a051fbAB2Ba76F786FCBF2cE0cFA8Fc
+Contracts. The first three are verified on Sourcify with an exact match.
+  NameCredit                      0xEa15E229636752Eb2Af77cC0bBc58F236f676291
+  stand-in Agent ID registry      0x71760a997dd55a54fC709A67E276AA07e781eC50
+  attack runner                   0x353cd4471a9a1A8Ff9CcaF94DE7d60A4AAe012eb
   owner of the pool and registry  0xF6010Cf5E9d5a33531ae0479c33aA48d958eFfA5 (a testnet-only wallet)
-  second pool, wired to a hostile registry  0x361a8425A3D42A2b55EB22bd0E7D0A574B8ec2c2
-  hostile registry                0x21cd16716B8bE772d5780e65bD47277454223B9c
+  second pool, wired to a hostile registry  0x00Fd1CB430BAaee3Cf58C8F584B7db5c0ae8e1DD
+  hostile registry                0xDA0677289A8a5796738801aF15946c2F366a8E1A
 
 Testnet settings: first advance 0.0003 BNB, cap 0.0048 BNB, term 1 hour, pace 24 a day.
-The term and pace are shortened so the pace can be exhausted with two wallets and the late-payment
-attacks need one day. Mainnet uses a 3 day term and a pace of 100 a day.
+The term and pace are shortened so that the pace holds exactly one first advance and the late-payment
+attacks need one day. Mainnet is planned with a 3 day term and a pace of 100 a day.
+
+HOW TO READ THE RECORD
+Each attack carries the error its rule says it must be refused with. REFUSED means it was refused with
+exactly that error. HOLDS is a check on the books. SERVED is a control: a call that must succeed, so
+that the refusals next to it mean something. Anything else would start with two exclamation marks.
 
 ATTACK RECORD, read back from the chain with security/Report.s.sol
 attack record on chain 97
-runner 0xBFfEf6fD3a051fbAB2Ba76F786FCBF2cE0cFA8Fc
-target 0x593EFd791758130B41FA9BA1eF3DCB2bC6CC0Eb9
+runner 0x353cd4471a9a1A8Ff9CcaF94DE7d60A4AAe012eb
+target 0xEa15E229636752Eb2Af77cC0bBc58F236f676291
 REFUSED  [C1] a wallet with no name borrows -> NoAgentId
 REFUSED  [C1 C18] a wallet with no name borrows with a valid pass -> NoAgentId
+SERVED   [control] a named wallet borrows with the plain call
+REFUSED  [C8] one more first advance than the pace allows, in the same block -> PaceExhausted
 REFUSED  [C3] a second advance while one is open -> AdvanceOpen
-REFUSED  [C15] borrow again from inside the payout -> PayoutFailed
-REFUSED  [C15] repay from inside the payout -> PayoutFailed
-REFUSED  [C15] mark itself missed from inside the payout -> PayoutFailed
 REFUSED  [C13] mark an advance missed before it is overdue -> NotOverdue
 REFUSED  [C4 C14] repay one wei less than owed -> Underpaid
+REFUSED  [C15] borrow again from inside the payout -> ReentrancyGuardReentrantCall
+REFUSED  [C15] repay from inside the payout -> ReentrancyGuardReentrantCall
+REFUSED  [C13] mark itself missed from inside the payout -> NotOverdue
+REFUSED  [C15] borrow from inside the refund of an overpayment -> ReentrancyGuardReentrantCall
+REFUSED  [C6] borrow again before the term has ended -> TooEarly
+REFUSED  [C18] a repeat borrower spends a newcomer's pass -> PassNotNeeded
+REFUSED  [C18] use the same pass a second time -> BadPass
+REFUSED  [C18] use a code that was never issued -> BadPass
 REFUSED  [C10] send BNB straight to the contract -> DirectTransfer
 REFUSED  [C10] call a function that does not exist, with BNB -> no such function
-REFUSED  [C7] force BNB in to distort the books -> the totals did not move
+HOLDS    [C7] the balance equals the books to the wei, after real use -> the books balance
+HOLDS    [C7] force BNB in: the books stay put and the balance sits one wei above them -> the books balance
 REFUSED  [C16] stranger withdraws the pool -> OwnableUnauthorizedAccount
 REFUSED  [C16] stranger tops up -> OwnableUnauthorizedAccount
 REFUSED  [C16] stranger pauses -> OwnableUnauthorizedAccount
@@ -37,114 +50,143 @@ REFUSED  [C16] stranger schedules settings -> OwnableUnauthorizedAccount
 REFUSED  [C16] stranger cancels settings -> OwnableUnauthorizedAccount
 REFUSED  [C16] stranger issues a pass -> OwnableUnauthorizedAccount
 REFUSED  [C16] stranger revokes a pass -> OwnableUnauthorizedAccount
+REFUSED  [C16] stranger rescues a token -> OwnableUnauthorizedAccount
 REFUSED  [C16] stranger takes ownership -> OwnableUnauthorizedAccount
 REFUSED  [C16] stranger accepts ownership -> OwnableUnauthorizedAccount
 REFUSED  [C16] stranger renounces ownership -> OwnableUnauthorizedAccount
-REFUSED  [C18] use the same pass a second time -> BadPass
-REFUSED  [C18] use a code that was never issued -> BadPass
-REFUSED  [C8] one more first advance than the pace allows, in one block -> PaceExhausted
-REFUSED  [C6] borrow again before the term has ended -> TooEarly
+REFUSED  [C13] mark more wallets in one call than the limit -> BatchTooLarge
 REFUSED  [C16] apply settings when none are scheduled -> NothingScheduled
 REFUSED  [C16] apply settings before the delay has passed -> TooSoon
-REFUSED  [C1 C2] the registry reverts when asked who holds a name -> NoAgentId
-REFUSED  [C1 C2] the registry says yes but returns an empty name -> NoAgentId
-REFUSED  [C1 C2] the registry says the name belongs to someone else -> NoAgentId
-REFUSED  [C1 C2] the registry returns a name longer than 64 bytes -> NoAgentId
-REFUSED  [C1 C2] the registry never answers -> NoAgentId
-REFUSED  [C1 C2] the registry floods the caller with data -> NoAgentId
-attacks tried 34
-attacks refused 34
+REFUSED  [C1] the registry reverts when asked who holds a name -> NoAgentId
+REFUSED  [C1] the registry says yes but returns an empty name -> NoAgentId
+REFUSED  [C1] the registry says the name belongs to someone else -> NoAgentId
+REFUSED  [C1] the registry returns a name longer than 64 bytes -> NoAgentId
+REFUSED  [C2] the first read never answers -> NoAgentId
+REFUSED  [C2] the first read answers correctly, then floods -> NoAgentId
+REFUSED  [C2] the second read never answers -> NoAgentId
+REFUSED  [C2] the second read answers correctly, then floods -> NoAgentId
+REFUSED  [C2] the third read never answers -> NoAgentId
+REFUSED  [C2] the third read answers correctly, then floods -> NoAgentId
+SERVED   [control] the same wallet, once the registry answers honestly
+attacks tried 43
+attacks refused with the expected error 43
+controls that had to succeed 2
+controls that succeeded 2
 
-Still to run: the 3 late-payment attacks (security/Phase2.s.sol). They need the advance left open by
-wallet 3 of the runner to pass its due time and its day of grace: after 2026-11-25 09:02:02 UTC.
+Still to run: security/Phase2.s.sol, 9 more entries that need a day to pass (a late repayment and its
+cooling-off, the newcomers' reserve, a pace change coming into force, a returning borrower).
+It can run after 2026-11-25 09:56:59 UTC, when the advance left open by the runner's wallet number
+6 is past its grace, and must run before 2026-12-01 20:57:17 UTC, when the settings
+scheduled in phase one lapse.
 
 PROVE-IT COMMAND, script/ProveIt.s.sol
 The figures below are printed by the script before it sends. The transactions further down are the
-on-chain record; the due time on chain is the real block time, a few seconds later than printed.
+on-chain record; times on chain are real block times, a few seconds later than printed.
 chain id 97
-NameCredit 0x593EFd791758130B41FA9BA1eF3DCB2bC6CC0Eb9
-borrower name prove144561325.ai (issued by the testnet stand-in registry)
-borrower wallet 0x2dAD93CD08b98c4fEF92B3329d714f5368e3f267
-1. borrowed with nothing locked, wei 300000000000000
+NameCredit 0xEa15E229636752Eb2Af77cC0bBc58F236f676291
+borrower name prove144568769.ai (issued by the testnet stand-in registry)
+borrower wallet 0x280Ea83A83490b732df8Ba9069584597D79AF2e6
+1. borrowed with nothing locked (with a pass, so the result does not depend on the pace), wei 300000000000000
    borrower now holds, wei 300000000000000
    pool went down by, wei 300000000000000
    owed, wei 300000000000000
-   due at, unix time 1795511057
+   due at, unix time 1795514413
 2. a wallet with no name asked too. Served: false
    refused for having no Agent ID: true
 3. repaid in full. Owed now, wei 0
    ladder step now 1
    next limit, wei 600000000000000
-   next advance from, unix time 1795511057
+   next advance from, unix time 1795514413
 PROVED: borrow with nothing locked, refusal without a name, repayment that doubles the limit.
 ONCHAIN EXECUTION COMPLETE & SUCCESSFUL.
 
 Read back from the chain after the run:
-  borrower standing: step 1, limit 0.0006 BNB, owed 0, repaid on time 1, late 0
-  the refusal: log Asked(served = false, reason = 0xf947691f), and 0xf947691f is NoAgentId()
-  totals: 4 borrowers, 0.0012 BNB lent, 0.0006 repaid, 0.0006 outstanding, 0.02 topped up, 0 withdrawn
-  pool balance: 0.019400000000000001 BNB (the last wei is the one forced in by the C7 attack)
+  the prove-it borrower: step 1, limit 0.0006 BNB, owed 0, repaid on time 1, late 0
+  the refusal is in the log of the tryBorrow transaction: Asked(served = false, reason = 0xf947691f),
+  and 0xf947691f is the selector of NoAgentId()
+  totals: 6 borrowers, 0.0018 BNB lent, 0.0006 BNB repaid, 0.0012 BNB outstanding, 0.02 BNB topped up, 0 BNB withdrawn
+  pool balance: 0.018800000000000001 BNB (one wei above the books: the wei forced in by the C7 check)
 
 TRANSACTIONS
-Deploy: 2 transactions, 2 succeeded, 5390187 gas
-  0xbbe27016bfef5f778175ce89ab78b328c2c5ce531b78576062fb9d931e032338  block 144560681  deploy HandleRegistry
-  0xe799bea79df33a147e467e42d3109f08dfbda4c3bc688d3e0d91c6471f2a0f30  block 144560690  deploy NameCredit
+Deploy: 2 transactions, 2 succeeded, 5417634 gas
+  0x03732b718b9de041794c50668049686c18a531e66b7d51f61b28bbb4bb78e6dc  block 144568051  deploy HandleRegistry
+  0xfc8f825fa3888708e8f29558dafce262a624b835cc23ba0d962b9427ce0f7559  block 144568059  deploy NameCredit
 
-Phase 1 attacks: 44 transactions, 44 succeeded, 17369726 gas
-  0x03c86249b2f132fa1b75fb9ed9212b514c52c17f34dd8df44be62f1194e5c219  block 144560881  deploy AttackRunner
-  0x57473c631fa918f2331f517aa1c0e9abf04ea6d177dc0bcd90767710ce85027e  block 144560887  adminRegister(string,address)
-  0x60cd330d0158c1330d95f79e20c36fecfcd21cd1a6115f5a9d980b4792f9468c  block 144560895  adminRegister(string,address)
-  0x94241c19fe1899b9bb8d8b97117a77d18d2ad82389a8c73745fb1463805ffc73  block 144560903  adminRegister(string,address)
-  0x2fd3fa51689cb38a9fa61cb7c71a4582de576140b1953615c83b3d42eeab11a0  block 144560911  adminRegister(string,address)
-  0x3a8f359dba2f84fc25ea8c950f8fb7ad4075de81769f138c431f315714fe06e0  block 144560919  adminRegister(string,address)
-  0x14f8dd37718c386f7979a671799bc50c7a8fa6c2264490f3188210237d0b0fb0  block 144560927  adminRegister(string,address)
-  0x49caf00cd4d25ae8ca014fc924c795986fa31ff77030b7d6e72bcc1db9e60f07  block 144560935  adminRegister(string,address)
-  0x6f699a64fb7e177da80736043da66186f165651949ac50eec3463d4f2ba12773  block 144560942  adminRegister(string,address)
-  0x382c9f1e5a8221263fdf83203a633d9d5eec922946ca1c2f40f31d591eb3fc1a  block 144560950  topUp()
-  0x315cbb1180f80e80106a7881a219c16474c2bc79dbda362610f982b2ce460ede  block 144560959  transfer
-  0xefbef6fd10a397356a60db1e91020b828c8865bebdb1e32e9660962f3522102e  block 144560966  addPasses(bytes32[],uint40)
-  0xd2530b20b384a3b9619c808e4d82cd1a3148c626a7f5eb2c9d6ed21d47970c28  block 144560975  noNameBorrows(bytes32)
-  0x8f7ca0e6cdaa32eaa8cc85ebd2d14da38bfd404f52db6280e81a20317ac0fc17  block 144560983  secondAdvance(uint256,bytes32)
-  0xc155c63487db118bde65ff44fa42d4454faa613e1f559c2023e4c5d46d92e654  block 144560990  reenterOnPayout(uint256,bytes32)
-  0x9c9cd28921941f6f5ab4f4e4c1ef2c9256ba42aaffbcea10187cd839381d516c  block 144560999  spoilAnOpenAdvance(uint256)
-  0x94cb755e8154420af34b4dda5bbc41d0cb069269f61d241d7a048ec37e7df79c  block 144561007  unwantedBnb()
-  0xa063f4430a20da117f1f094fb98d4a08bf04faef64a714f57fda4d55f49e5b4d  block 144561015  ownerFunctions()
-  0xee4ce08174bbe88894cffad081843161e9c3a02a8f99e411eb329aa0a2fcfdcc  block 144561024  reuseAPass(uint256,uint256,bytes32)
-  0xa119db57805e7b83aa01fb16031685fe1b0e83bf3417a4c234a927ecb1f06bc6  block 144561031  beatThePace(uint256,uint256)
-  0x44cc7e9bcdadc4a2fe4b4e62cf1dcdbcdad0d527355938a40ed59b25d889e70b  block 144561039  climbInAMinute(uint256)
-  0x531d32f7dbca44526bfafc9d1052a038a70667deda9d88cd18141fa7f796d607  block 144561047  rushSettings()
-  0x00638d030ab8bb1d1b9246400ddeee36256c140a1de7e75e9e60930547f81a3a  block 144561055  scheduleSettings((uint96,uint96,uint32,uint32))
-  0xbf476ee24f104be1f062abd6cc77a93a405aa20fa5249358c4885659262f9350  block 144561064  rushSettings()
-  0xf3b46e79c9132814a1e0748a143df081c7b307d403b6dea4e868bbb24be01d86  block 144561072  cancelSettings()
-  0x708dc70b0ea4e38bf4464ba28ac8f57ff9ff73083ce3b183e5aebf29b6385174  block 144561080  deploy RawRegistry
-  0xaf2a5fa03795cd5023c51e446f0568e41b5adf2346af14731997ec3c2ac788b1  block 144561089  deploy NameCredit
-  0x662913e06afc4e04437eaec49a13c0877b7f52a99b0f5e97219d87203278becb  block 144561097  topUp()
-  0x4c7c2bc96293cd668d98e748b546b1e509f4bc8ae19e136c2c9db199f8a60d81  block 144561104  set(bytes4,uint8,bytes)
-  0x94456a7807b2082a16398d1ba27eb3dace83d6c38e7c332d993a24c72baafdac  block 144561113  againstAHostileRegistry(address,string)
-  0x115dc8d99b14ce28a05bec643d0123329d7726b1c1c6c5d2a555d82d3b973a36  block 144561121  set(bytes4,uint8,bytes)
-  0xea4805afb75c3bb2e6b305e40d1afca543c316bcaccd4b5d0b954439d6940a56  block 144561129  set(bytes4,uint8,bytes)
-  0x6f2426a8df0f7d394a326c095018148a6b2249512d590b8c1b285261a96ccf65  block 144561137  againstAHostileRegistry(address,string)
-  0x5b9a91e3f26392e18870d7c634643aec8b646606a6d5ccc0aea1e25ac65abbb2  block 144561145  set(bytes4,uint8,bytes)
-  0x60f16f57239635176807dda252d9411b116e086388dc2f2869eaa71f58c60499  block 144561153  set(bytes4,uint8,bytes)
-  0xfbae08395a3ae36248d3acd7ec835739cc57a9115376c6a8a244000071bdf55f  block 144561163  againstAHostileRegistry(address,string)
-  0x514176d567641251984f0c47634869e121fd2bb15035ed262c95487accbb1f8a  block 144561170  set(bytes4,uint8,bytes)
-  0x499963832d577a022b844268aa36fedf79325bd06a82639c5afb989b4bd5a1bf  block 144561179  set(bytes4,uint8,bytes)
-  0x2607c76bf9dcc3691fb74256a68fcc7fee571c5647241f89fc2d9570d1f4e5f8  block 144561187  againstAHostileRegistry(address,string)
-  0x5d30e1bfb05c662082f9eb37d4dd140f723b688e4993820f05dfcbbea71dd258  block 144561195  set(bytes4,uint8,bytes)
-  0x5eb8555d42eef5622230793c0e2ef80d1edf874a473747ba739cd83c654386da  block 144561204  againstAHostileRegistry(address,string)
-  0x4c37a29e279782ee134c6f00db911dca47dd0989863487a1da842b1f0a3021f0  block 144561211  set(bytes4,uint8,bytes)
-  0xe5b554c77f16f0f445852fdaee1d1025d1782b8dffb9dfec2c17811ac1cb8a70  block 144561219  againstAHostileRegistry(address,string)
-  0x3ed72d72fb0cce19f42ad908e8ec43e3dcb28581866d50c566118d640876bef6  block 144561227  withdraw(uint256)
+Phase 1: 60 transactions, 60 succeeded, 23948883 gas
+  0x31dd7527021dd336b92560912be2fe8a1c7a5603d0b56f1c254e0d30ac17c753  block 144568177  deploy AttackRunner
+  0x82fec285d0bacba29705a0b06fe470ad7602269e52a1dd281091d2e90721a18a  block 144568185  adminRegister(string,address)
+  0xe419b6cf7c14728379434053a5272305796169fa7118775d46c5404693d3e157  block 144568193  adminRegister(string,address)
+  0xd4d02a1c79f1c07fc7f67838a095c9cdf0d2a9e89fd6fc313b1c06999aa6d7a1  block 144568201  adminRegister(string,address)
+  0x6fb9ad8127d024e9cb830c6344904f83b014834844db6b26ec76bd1af4a6b44d  block 144568209  adminRegister(string,address)
+  0xead34e01238819411a96bbff89106017b5067da5d3579ff770fa66144bfe80b0  block 144568217  adminRegister(string,address)
+  0x9febdd40bcb32b64bf5598159ca9b7ac115ae45424157f56c4735301dd852b97  block 144568224  adminRegister(string,address)
+  0x328918c2d7a533c1618e12bf3fe7c9622c485e5c37296b2d3ae920dad3c06960  block 144568232  adminRegister(string,address)
+  0x6968b74b5cffe299996ca37a79fcf09b0f0f3cc943846870547dd2f70e09e16f  block 144568240  adminRegister(string,address)
+  0x0edee552bff85997df236164d1c06395d965d69a94d3be3b813c91963cefa1c4  block 144568249  adminRegister(string,address)
+  0xd9e11229180f77171ca4d3530ac3fb53dd2c12d8b36d9f0be220e2c60f07ba04  block 144568257  adminRegister(string,address)
+  0x4cd3df103859ce1b4378ee0b59cfab820a0de1a99606e5c541570214240a9b23  block 144568265  topUp()
+  0xd985190ec87c40b3100b3b9da58d220915f0d4dc4ba8eb697e8c522c9d742a1a  block 144568273  transfer
+  0x4f2de0c8a2163b5c7cd86bf8dc81502df042d8c58d1d3b9c52e1ac05844d05fd  block 144568282  addPasses(bytes32[],uint40)
+  0x80750aeb9ffcd351f42299e57ea607777486dd15efdc74505844ad1964e22d25  block 144568289  noNameBorrows(bytes32)
+  0xf3c0fbdee59dc2c83914f6950d6a518fc6c7c0f104c05a499ecd98c0ca6b656a  block 144568298  paceServesOneThenRefuses(uint256,uint256)
+  0xb3c9746cc75a9ccbed1c6f203dafb312f1e6a29cd11039a19011088af3349fdc  block 144568305  againstAnOpenAdvance(uint256)
+  0x649ad83672fe16f2a689b764aa0dfa2ec192c78f07a36ff9caaa98ea71bac9c2  block 144568313  reenterOnPayout(uint256,bytes32[3])
+  0xec41a96919105d8d486e42b8b5094d2160e7b067e5b8d8486cf003ae164e3a39  block 144568321  reenterOnRefund(uint256,uint256)
+  0x1c4caa46b9ce3cc8ae82a339c52bea18c933a21639b1947df98e665796e33475  block 144568329  climbInAMinute(uint256,bytes32)
+  0x42579c8b454a78060e82459410a207f2568bc3fe9f877b83014fb5b8fd81e134  block 144568337  reuseAPass(uint256,uint256,bytes32)
+  0xfc1851be7114e56d5f004c4a38aa65d5b76ff48bc8c6427fb0c1505f627467a5  block 144568344  unwantedBnb(uint256)
+  0xabd857cf44b77498fe990db4eeeff604dfb82ad2b854d1b30343ad6f30bd7a5d  block 144568354  ownerFunctions()
+  0xa82a000fe7018aee0b6735ca1504a74c64a36c3c6d85dd79daee02a9fb228c82  block 144568361  tooManyAtOnce()
+  0x3e641425ac7016fb9bf974255bf2f9d2f5175b96e94e7be8cde6b08b336b19da  block 144568369  rushSettings()
+  0x1082362bd4144ffa09f0e36525259e900b139cf782d252fbaabbf525d8f2faa4  block 144568377  scheduleSettings((uint96,uint96,uint32,uint32))
+  0x12af5b48c6d917b18b46ab42dd2160c08b5c4a06d2f4f8346f6495cd31fdc5d7  block 144568385  rushSettings()
+  0xcd517b64588822d769feae1dac7e607afd712e2af554a5d98bfa74c60b23489c  block 144568393  deploy RawRegistry
+  0x85212f292e1335d14ffe6bacc8f02919e1b14193d091bbcb9a68a0728105dd9c  block 144568401  deploy NameCredit
+  0x58e25e7f9a5d70b708dfa9c206ffa6273eee490039f20f1d994f4db9a20bbfe6  block 144568409  topUp()
+  0x113234940d6eec48a58f6d48163d2a9fe5ad0cd5cf58b4d614e83320246415d6  block 144568417  set(bytes4,uint8,bytes)
+  0xa4a7ccfbf49e4fe1573d2e0e078ecc7c19506bebb21ba676b38e460d40a623a8  block 144568425  againstAHostileRegistry(address,string,string,bytes4)
+  0x1a63c4a2ba20e6e0b0cb3af8fb2446c62ea5e6ed1a2df5acde5705c93163f029  block 144568433  set(bytes4,uint8,bytes)
+  0xe24e124fc3ccbdbdb5720e81f8f9006a8ec7a30d37d7d89d1d193e6f425fde2f  block 144568441  set(bytes4,uint8,bytes)
+  0xb9bd91cfe9dec63fc651206daa6548120d92c3e86fe281cae388e3ec3f262a80  block 144568448  set(bytes4,uint8,bytes)
+  0x3afde8cc7748e1518e3fbbaf1598f8c19d2291b441e6fa775b80f46c15d76261  block 144568457  againstAHostileRegistry(address,string,string,bytes4)
+  0x0faae40475c742d035fb664b174b6b8540677c7c5e953bc1b70b94788b530197  block 144568465  set(bytes4,uint8,bytes)
+  0x6b430cf0253cca25cdba811ae623d5c2dfb96c3114279593e671ccf3e957a9ee  block 144568473  set(bytes4,uint8,bytes)
+  0xf2a59f87ae1e8a7c4afcc5033bc4ddce58224395bfa5fe678680a1421744cc70  block 144568482  againstAHostileRegistry(address,string,string,bytes4)
+  0x758504e39e7868e0f8b6897e444fb154f4f3b81d6916123505230537fb085ad1  block 144568489  set(bytes4,uint8,bytes)
+  0x4044d5b3505d6f28a6a11410b9c9ed884335b113a27c248247cd19db44e97793  block 144568497  set(bytes4,uint8,bytes)
+  0x384dc2fc25139e5efaa93944c88a1f533f5b65f4257162b44cccbd5cba58f2ec  block 144568505  againstAHostileRegistry(address,string,string,bytes4)
+  0x365581b60b082b75f826a74d45c6f4392e97e0a29285f15ba8c5bad6798c5635  block 144568513  set(bytes4,uint8,bytes)
+  0x9adadc70a009216f4674d7d5daec6005cb76c72e78ed09bee1e46b70330f8cf3  block 144568522  set(bytes4,uint8,bytes)
+  0xfce894d4cb0cd02e371882e7d8e39de226392ce41409c9e7437d291a6e658525  block 144568530  againstAHostileRegistry(address,string,string,bytes4)
+  0xa5d4da36755ef06a972592fa6e2f0da16c6bb7180671454cbbd4fc1e7c33a687  block 144568538  set(bytes4,uint8,bytes)
+  0x6ec51cd2a23d7da6baf260b3dc3d80fc18c152c700104bcd277f698117741a21  block 144568547  againstAHostileRegistry(address,string,string,bytes4)
+  0x838e53c72a14832cdc375abfe11fab745ecec4cd678c0e282689a2338f4f1056  block 144568554  set(bytes4,uint8,bytes)
+  0x99d0f5d281c56902b6f9be6ab14786229d75051383ee192607c98a2443108f63  block 144568562  set(bytes4,uint8,bytes)
+  0x3e8fd8e5f9b627bda4b4b1965f58a773889d5ba25c1f65b84c379b5b2c65a0bf  block 144568570  againstAHostileRegistry(address,string,string,bytes4)
+  0x8fbb318f03df85c1fc9ffa016b0ffa02ca10fb059452a0875d7ac486db5657f3  block 144568578  set(bytes4,uint8,bytes)
+  0x5feb1a1d94be4dc1717732ca846f0905966c2d3f82f5d11d499b1aaf72982e7a  block 144568586  againstAHostileRegistry(address,string,string,bytes4)
+  0xd5185be318700a6b75d875202c3d6d7ecf0b7564dbdc769a2d1aabfcfa648013  block 144568593  set(bytes4,uint8,bytes)
+  0x638f780670518618a2afa52d098ad78fe1e85604b7f8d84e34dc90e5bd1c63b8  block 144568602  set(bytes4,uint8,bytes)
+  0xc2f89aca2ea29d2c174f1e03cc2c323fc1641f90694163cc0b1253bc3f0e7600  block 144568610  againstAHostileRegistry(address,string,string,bytes4)
+  0x6697b8796fbca013921faa3854d2aeab1685244974c4d4750a0d0b3c76e952ca  block 144568619  set(bytes4,uint8,bytes)
+  0x6fb724253d7d88b13f9b6815b838dc6837c618e94741064658e8b886c5d9fdf6  block 144568626  againstAHostileRegistry(address,string,string,bytes4)
+  0xaa60e004898a91884038774574b3c3ab883f764178ffb1dfab572dc87e9bb90c  block 144568634  set(bytes4,uint8,bytes)
+  0xe0a2d19beb212e5382a74bff068beb481f6a35751aa306e80c36488b2026ad79  block 144568642  hostileRegistryControl(address)
+  0x01bb42f07ccdcfb70c9c9f2ca2dc72db30cedb673a56c0620d61b26deb905891  block 144568650  withdraw(uint256)
 
-Prove-it: 7 transactions, 7 succeeded, 1361342 gas
-  0x6a56dad89aaf49983139b8beb0591a644140ca104210aa981e650d89755ea17b  block 144561356  deploy Puppet
-  0xe40af03d5490f98d51eddd180366c87900f77080b385919c8990025e72ade32e  block 144561365  deploy Puppet
-  0xc9985183ab3e3bc0903ed2137d0ab84ba0e5be0c82949c61a47923c12b9443e2  block 144561372  adminRegister(string,address)
-  0x6ff1f5b6edb7e9029b4cab5deb1d2bf6b39087d7b76869f98fe8e8e09894fb2c  block 144561381  addPasses(bytes32[],uint40)
-  0x3690b5505306342c1fb60b065e2a833a10fbc2f37475319a29eeaf56ad6d214c  block 144561389  borrowWithPass(bytes32)
-  0x430dedc5053a39f2eedf803247e818f3f755d938bd0f52306fe8b67ca72e039a  block 144561396  tryBorrow()
-  0x54f0901f39fecf15d53d0a1cf99bf923315c66ff3f12cb621e193698977f4a19  block 144561405  repay(address)
+Prove-it: 7 transactions, 7 succeeded, 1780844 gas
+  0x3e733b608b079165c89dc3103cdb84903317456506a0b5fe0dcd5485050f80bd  block 144568803  deploy Puppet
+  0xc5e47be2c7253315f078a16fd1ad3bca43fabae3a6417a47131e3085b1621843  block 144568811  deploy Puppet
+  0xcc0a005c6f79681ad7e335013e918879e1022f1e7aa2be510e5a16dd5ab67bc1  block 144568819  adminRegister(string,address)
+  0x69d5e93971e614cadffa6ce60fa4b6ce69b367fb360590b7a1ee420ab2a59cf4  block 144568827  addPasses(bytes32[],uint40)
+  0x3a7c93495601e6296786f74abe55da20a021430a0af23450b1941bac447c45cd  block 144568835  borrowWithPass(bytes32)
+  0xac4af74ffdd708824f255309c745ec0fc8afa2174640d170da9b747ce314a9c3  block 144568843  tryBorrow()
+  0x9c915f8f13f076913609e614bb3d1ff8e7aab46e76326ccf1cdc23690a0cc83f  block 144568851  repay(address)
 
 What this run does not cover: a transaction signed by a real Binance Agentic Wallet, Binance's own
 preview and risk check, and the real Agent ID registry. Those exist on mainnet only. The registry here
-is a stand-in deployed from the real registry's verified source.
+is a stand-in deployed from the real registry's verified source, with the same name lengths (3 to 20).
+
+An earlier deployment of the same day, 0x593EFd791758130B41FA9BA1eF3DCB2bC6CC0Eb9, is superseded. The
+contract gained two checks after it (a pass is refused above the first step; scheduled settings lapse)
+and the attack record gained expected errors and controls.

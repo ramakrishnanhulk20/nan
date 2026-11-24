@@ -1,7 +1,7 @@
 {
-  "hostileCredit": "0x361a8425A3D42A2b55EB22bd0E7D0A574B8ec2c2",
-  "hostileRegistry": "0x21cd16716B8bE772d5780e65bD47277454223B9c",
-  "lateBorrowerPuppet": 2,
-  "phase1Block": 144560825,
-  "runner": "0xBFfEf6fD3a051fbAB2Ba76F786FCBF2cE0cFA8Fc"
+  "hostileCredit": "0x00Fd1CB430BAaee3Cf58C8F584B7db5c0ae8e1DD",
+  "hostileRegistry": "0xDA0677289A8a5796738801aF15946c2F366a8E1A",
+  "lateBorrowerPuppet": 6,
+  "phase1Block": 144568122,
+  "runner": "0x353cd4471a9a1A8Ff9CcaF94DE7d60A4AAe012eb"
 }

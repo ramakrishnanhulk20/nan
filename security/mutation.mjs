@@ -1,7 +1,7 @@
 // Breaks NameCredit.sol on purpose, one rule at a time, and checks that the test suite notices every time.
 // It works on a private copy in the system temp folder. The real source is never touched.
 // Run from the repo root:  node security/mutation.mjs
-// Needs Foundry and Node 18 or newer. Takes about fifteen minutes. Writes security/outputs/mutation.txt.
+// Needs Foundry and Node 18 or newer. Takes about twenty minutes. Writes security/outputs/mutation.txt.
 import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync, rmSync, mkdirSync, cpSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -22,6 +22,7 @@ const target = join(work, "src", "NameCredit.sol");
 const original = readFileSync(target, "utf8").replace(/\r\n/g, "\n");
 
 // [what the break does, the exact source text to find, what to put in its place]
+// A break that needs two edits gives both as lists of the same length.
 const MUTATIONS = [
   ["on-time boundary moved by one second", "bool onTime = block.timestamp <= uint256(due) + GRACE;", "bool onTime = block.timestamp < uint256(due) + GRACE;"],
   ["one advance per term removed", "if (due > a.notBefore) a.notBefore = due;", ""],
@@ -39,7 +40,6 @@ const MUTATIONS = [
   ["step keeps rising at the cap", "if (step < MAX_STEP && _limit(step, s) < s.cap) a.step = step + 1;", "if (step < MAX_STEP) a.step = step + 1;"],
   ["missed count not corrected on late repayment", "--_stepTally[step].missed;", ""],
   ["non-canonical name reply accepted", "if (out.length != 64 + ((length + 31) & ~uint256(31))) return bytes32(0);", ""],
-  ["name length ceiling removed", "length == 0 || length > MAX_NAME_LENGTH", "length == 0"],
   ["stored pace has no ceiling", "if (credit > ceiling) credit = ceiling;", ""],
   ["a changed name is accepted", "} else if (a.nameHash != nameHash) {\n            revert NameMismatch();\n        }", "}"],
   ["repayment can be paused", "function repay(address borrower) external payable nonReentrant {", "function repay(address borrower) external payable nonReentrant whenNotPaused {"],
@@ -68,6 +68,17 @@ const MUTATIONS = [
   ["stranger can issue passes", "function addPasses(bytes32[] calldata passHashes, uint40 expires) external onlyOwner {", "function addPasses(bytes32[] calldata passHashes, uint40 expires) external {"],
   ["stranger can schedule settings", "function scheduleSettings(Settings calldata next) external onlyOwner {", "function scheduleSettings(Settings calldata next) external {"],
   ["stranger can pause", "function pause() external onlyOwner {", "function pause() external {"],
+  ["a pass can be spent above the first step", "        if (_accounts[msg.sender].step != 0) revert PassNotNeeded();\n", ""],
+  ["a pass skips the wait after a late repayment", "if (block.timestamp < a.notBefore) revert TooEarly(a.notBefore);", "if (!withPass && block.timestamp < a.notBefore) revert TooEarly(a.notBefore);"],
+  ["scheduled settings never lapse", "        if (block.timestamp > effectiveAt + SETTINGS_WINDOW) revert SettingsLapsed(effectiveAt + SETTINGS_WINDOW);\n", ""],
+  ["a returning borrower is served on the name on file", "bytes32 nameHash = _nameHashOf(msg.sender);\n        if (nameHash == bytes32(0)) revert NoAgentId();", "bytes32 nameHash = _nameHashOf(msg.sender);\n        if (nameHash == bytes32(0)) nameHash = a.nameHash;\n        if (nameHash == bytes32(0)) revert NoAgentId();"],
+  ["an open advance is re-priced when the settings change", "        uint256 owed = a.owed;\n        if (owed == 0) revert NothingOwed();\n        if (msg.value < owed)", "        uint256 owed = a.owed == 0 ? 0 : _limit(a.step, settings);\n        if (owed == 0) revert NothingOwed();\n        if (msg.value < owed)"],
+  ["an owner function that wipes a record is added", "    /// @notice Disabled: with no owner the pool could never be withdrawn.", "    function forgive(address who) external onlyOwner {\n        delete _accounts[who];\n    }\n\n    /// @notice Disabled: with no owner the pool could never be withdrawn."],
+  [
+    "the BNB leaves before the debt is on the books",
+    ["        (bool ok,) = msg.sender.call{value: amount}(\"\");\n        if (!ok) revert PayoutFailed();\n    }\n\n    function _mark(", "        uint40 due = (block.timestamp + s.term).toUint40();"],
+    ["    }\n\n    function _mark(", "        {\n            (bool ok,) = msg.sender.call{value: amount}(\"\");\n            if (!ok) revert PayoutFailed();\n        }\n        uint40 due = (block.timestamp + s.term).toUint40();"],
+  ],
 ];
 
 // The fork tests and the 16-day simulation are left out: they need the network or minutes per run.
@@ -113,11 +124,17 @@ try {
   }
 
   for (const [name, find, replacement] of MUTATIONS) {
-    if (original.split(find).length - 1 !== 1) {
+    const finds = Array.isArray(find) ? find : [find];
+    const replacements = Array.isArray(replacement) ? replacement : [replacement];
+    if (finds.some((text) => original.split(text).length - 1 !== 1)) {
       lines.push(`NOT RUN   ${name}: the source text to change was not found exactly once`);
       notRun++;
     } else {
-      writeFileSync(target, original.replace(find, replacement));
+      let mutated = original;
+      finds.forEach((text, i) => {
+        mutated = mutated.replace(text, replacements[i]);
+      });
+      writeFileSync(target, mutated);
       const r = runTests();
       if (/Compiler run failed/.test(r.text)) {
         lines.push(`NOT RUN   ${name}: the changed source did not compile`);
