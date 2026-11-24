@@ -238,7 +238,7 @@ contract NameCreditInvariantTest is Test {
         assertFalse(handler.openTermsChanged());
     }
 
-    /// C6: the balance is exactly top-ups plus repayments, minus advances, minus withdrawals.
+    /// C7: the balance is exactly top-ups plus repayments, minus advances, minus withdrawals.
     function invariant_theBooksBalance() public view {
         NameCredit.Totals memory t = credit.totals();
         assertEq(t.toppedUp, handler.toppedUp());
@@ -278,7 +278,7 @@ contract NameCreditInvariantTest is Test {
         }
     }
 
-    /// C9 and C10: repayment always goes through, and no settings change touches an open advance.
+    /// C11 and C12: repayment always goes through, and no settings change touches an open advance.
     function invariant_repaymentNeverFailsAndOpenTermsNeverMove() public view {
         assertFalse(handler.repayFailed(), "a full repayment was refused or cost the wrong amount");
         assertFalse(handler.openTermsChanged(), "a settings change altered an open advance");

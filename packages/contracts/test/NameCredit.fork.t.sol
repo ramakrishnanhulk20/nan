@@ -105,6 +105,10 @@ contract NameCreditForkTest is Test {
     }
 
     function test_fork_holdersGetOneAdvanceEachAndThePaceHolds() public onFork {
+        if (holders.length < 5) {
+            vm.skip(true, "fewer than five recent registrations on this fork: the pace check cannot run");
+            return;
+        }
         // At 100 a day, one hour of unused pace is 4 slots. A fifth caller in the same block has to wait.
         uint256 served;
         for (uint256 i; i < holders.length; ++i) {
@@ -124,13 +128,47 @@ contract NameCreditForkTest is Test {
         assertEq(credit.totals().outstanding, served * 0.0003 ether);
         console.log("real holders served in one block", served);
 
-        if (holders.length > 4) {
-            skip(720);
-            vm.prank(holders[4]);
-            credit.borrow();
-            assertEq(credit.totals().people, 5);
-            console.log("fifth holder served after waiting seconds", uint256(720));
+        assertEq(served, 4, "four were served and the fifth was turned away");
+        skip(720);
+        vm.prank(holders[4]);
+        credit.borrow();
+        assertEq(credit.totals().people, 5);
+        console.log("fifth holder served after waiting seconds", uint256(720));
+    }
+
+    /// "Cannot come back as someone new" rests on the registry never moving or destroying a name. Its code
+    /// says so (every transfer and approval reverts, and there is no burn) and its code cannot be swapped
+    /// (it is not behind a proxy). This checks all of that on the live contract.
+    function test_fork_aNameCanNeverMoveOrBeDestroyed() public onFork {
+        address holder = holders[0];
+        string memory name = registry.handleOf(holder);
+        uint256 tokenId = uint256(keccak256(bytes(name)));
+        address elsewhere = makeAddr("elsewhere");
+        bytes4 soulbound = bytes4(keccak256("Soulbound()"));
+
+        bytes[4] memory moves = [
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", holder, elsewhere, tokenId),
+            abi.encodeWithSignature("safeTransferFrom(address,address,uint256)", holder, elsewhere, tokenId),
+            abi.encodeWithSignature("approve(address,uint256)", elsewhere, tokenId),
+            abi.encodeWithSignature("setApprovalForAll(address,bool)", elsewhere, true)
+        ];
+        for (uint256 i; i < moves.length; ++i) {
+            vm.prank(holder);
+            (bool moved, bytes memory why) = REGISTRY.call(moves[i]);
+            assertFalse(moved, "the holder could move or lend out the name");
+            assertEq(bytes4(why), soulbound);
         }
+        vm.prank(holder);
+        (bool burned,) = REGISTRY.call(abi.encodeWithSignature("burn(uint256)", tokenId));
+        assertFalse(burned, "the registry has no burn");
+
+        assertEq(registry.ownerOfHandle(name), holder, "the name is where it was");
+        assertEq(registry.balanceOf(elsewhere), 0);
+        bytes32 implementationSlot = bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1);
+        bytes32 beaconSlot = bytes32(uint256(keccak256("eip1967.proxy.beacon")) - 1);
+        assertEq(vm.load(REGISTRY, implementationSlot), bytes32(0), "the registry is not behind a proxy");
+        assertEq(vm.load(REGISTRY, beaconSlot), bytes32(0), "nor behind a beacon");
+        console.log("a name cannot be moved, lent out or destroyed, and the registry code cannot be swapped");
     }
 
     function test_fork_strangerCanRepayForAHolder() public onFork {

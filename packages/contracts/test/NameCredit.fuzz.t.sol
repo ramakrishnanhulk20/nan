@@ -105,8 +105,35 @@ contract NameCreditFuzzTest is Base {
         credit.scheduleSettings(s);
     }
 
-    /// However callers time their attempts, first advances never exceed one hour of stored pace plus what
-    /// has been released since.
+    /// However long the pool sits unused, the first advances that can start in one block afterwards are at
+    /// most one hour of pace, or one advance where an hour of pace is less than one.
+    function testFuzz_aQuietSpellStoresAtMostTheCeiling(uint32 pace, uint32 quiet) public {
+        pace = uint32(bound(pace, 1, 10_000));
+        quiet = uint32(bound(quiet, 0, 60 days));
+        NameCredit c = new NameCredit(
+            address(registry), owner, NameCredit.Settings({firstAdvance: FIRST, cap: CAP, term: TERM, pacePerDay: pace})
+        );
+        vm.prank(owner);
+        c.topUp{value: 10 ether}();
+        skip(quiet);
+
+        uint256 atMost = uint256(pace) * 1 hours / 1 days;
+        if (atMost == 0) atMost = 1;
+        assertEq(c.pool().slotsNow, atMost, "the store is full and no fuller");
+
+        if (atMost > 6) return;
+        for (uint256 i; i <= atMost; ++i) {
+            address who = makeAddr(string(abi.encodePacked("q", vm.toString(i))));
+            _name(string(abi.encodePacked("quiet", vm.toString(i))), who);
+            vm.prank(who);
+            if (i == atMost) vm.expectPartialRevert(NameCredit.PaceExhausted.selector);
+            c.borrow();
+        }
+        assertEq(c.totals().people, atMost);
+    }
+
+    /// However callers time their attempts, first advances never exceed the ceiling of the store plus what
+    /// has been released since. The ceiling itself is checked by the test above.
     function testFuzz_firstAdvancesNeverBeatThePace(uint32 pace, uint16[24] memory gaps) public {
         pace = uint32(bound(pace, 1, 10_000));
         NameCredit c = new NameCredit(

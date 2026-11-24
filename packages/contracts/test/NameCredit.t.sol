@@ -7,6 +7,7 @@ pragma solidity 0.8.28;
 // owner functions (NameCredit.owner.t.sol).
 
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {NameCredit} from "../src/NameCredit.sol";
 import {Base} from "./Base.t.sol";
 import {RejectingWallet, ReenteringWallet, GasBurningWallet} from "./mocks/Hostile.sol";
@@ -97,16 +98,25 @@ contract NameCreditTest is Base {
     }
 
     function test_borrow_reenteringDuringThePayoutGetsNothingExtra() public {
-        ReenteringWallet w = new ReenteringWallet(credit);
-        _name("reenter", address(w));
+        bytes4 guard = ReentrancyGuard.ReentrancyGuardReentrantCall.selector;
+        // Marking is not behind the guard. It is refused because the advance is not overdue, and it could
+        // change nothing but a flag if it were.
+        bytes4[4] memory expected = [guard, guard, NameCredit.NotOverdue.selector, guard];
+        string[4] memory names = ["reentera", "reenterb", "reenterc", "reenterd"];
         for (uint8 mode = 1; mode <= 4; ++mode) {
+            ReenteringWallet w = new ReenteringWallet(credit);
+            _name(names[mode - 1], address(w));
             w.setMode(mode);
-            vm.expectRevert(NameCredit.PayoutFailed.selector);
-            w.borrow();
+            assertEq(w.borrow(), FIRST, "the advance itself goes through");
+            assertTrue(w.calledBack());
+            assertFalse(w.callBackWentThrough(), "the call back was refused");
+            assertEq(w.innerReason(), expected[mode - 1]);
+            assertEq(w.owedSeen(), FIRST, "the debt was on the books before the BNB left");
+            assertEq(w.outstandingSeen(), uint256(FIRST) * mode, "and so were the totals");
+            assertEq(_st(address(w)).owed, FIRST);
+            assertEq(address(w).balance, FIRST, "one advance and no more");
         }
-        assertEq(_st(address(w)).owed, 0);
-        assertEq(address(w).balance, 0);
-        assertEq(credit.totals().lent, 0);
+        assertEq(credit.totals().lent, uint256(FIRST) * 4);
     }
 
     function test_pace_fifthFirstAdvanceInOneBlockMustWait() public {
@@ -271,6 +281,42 @@ contract NameCreditTest is Base {
         assertEq(credit.passExpiry(keccak256(abi.encode(code))), START + 1 days, "a refused call leaves the pass unused");
     }
 
+    function test_pass_doesNotSkipTheCoolingOff() public {
+        bytes32 code = keccak256("a pass for later");
+        _addPass(code, uint40(START + 60 days));
+        _borrow(alice);
+        vm.warp(START + TERM + GRACE + 1);
+        _repay(alice);
+        assertEq(_st(alice).step, 0, "a late repayment puts the wallet back at the first step, where a pass counts");
+
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(NameCredit.TooEarly.selector, block.timestamp + COOLING_OFF));
+        credit.borrowWithPass(code);
+
+        vm.warp(block.timestamp + COOLING_OFF);
+        vm.prank(alice);
+        assertEq(credit.borrowWithPass(code), FIRST, "once the wait is over the same pass works");
+    }
+
+    function test_pass_isRefusedAboveTheFirstStepAndStaysUnused() public {
+        bytes32 code = keccak256("a newcomer's code");
+        _addPass(code, uint40(START + 30 days));
+        _borrow(alice);
+        _repay(alice);
+        vm.warp(START + TERM);
+        assertEq(_st(alice).step, 1);
+
+        vm.prank(alice);
+        vm.expectRevert(NameCredit.PassNotNeeded.selector);
+        credit.borrowWithPass(code);
+        assertEq(credit.passExpiry(keccak256(abi.encode(code))), START + 30 days, "the code is still there for a newcomer");
+        assertEq(_borrow(alice), 2 * FIRST, "the plain call is the one that works above the first step");
+
+        address erin = _holder("erin");
+        vm.prank(erin);
+        assertEq(credit.borrowWithPass(code), FIRST);
+    }
+
     function test_repay_onTimeMovesUpOneStepAndWaitsOutTheTerm() public {
         _borrow(alice);
         skip(1 hours);
@@ -381,16 +427,38 @@ contract NameCreditTest is Base {
         assertEq(_st(alice).owed, 0);
     }
 
-    function test_repay_reenteringOnTheRefundFails() public {
-        ReenteringWallet w = new ReenteringWallet(credit);
-        _name("reenter", address(w));
+    function test_repay_aPayerThatRefusesItsChangeFailsOnlyItsOwnCall() public {
         _borrow(alice);
-        for (uint8 mode = 1; mode <= 4; ++mode) {
-            w.setMode(mode);
-            vm.expectRevert(NameCredit.PayoutFailed.selector);
-            w.repayFor{value: FIRST + 1 ether}(alice);
-        }
+        RejectingWallet payer = new RejectingWallet(credit);
+        vm.expectRevert(NameCredit.PayoutFailed.selector);
+        payer.repayFor{value: FIRST + 1}(alice);
         assertEq(_st(alice).owed, FIRST, "nothing changed");
+
+        payer.repayFor{value: FIRST}(alice);
+        assertEq(_st(alice).owed, 0, "the exact amount goes through");
+    }
+
+    function test_repay_reenteringOnTheRefundFails() public {
+        bytes4 guard = ReentrancyGuard.ReentrancyGuardReentrantCall.selector;
+        // Marking is not behind the guard. It is refused here because the advance is already settled.
+        bytes4[4] memory expected = [guard, guard, NameCredit.NothingOwed.selector, guard];
+        address[4] memory borrowers = [alice, bob, carol, _holder("dave")];
+        for (uint8 mode = 1; mode <= 4; ++mode) {
+            address borrower = borrowers[mode - 1];
+            _borrow(borrower);
+            ReenteringWallet w = new ReenteringWallet(credit);
+            w.setMode(mode);
+            w.setWatch(borrower);
+            w.repayFor{value: FIRST + 1 ether}(borrower);
+            assertTrue(w.calledBack());
+            assertFalse(w.callBackWentThrough(), "the call back was refused");
+            assertEq(w.innerReason(), expected[mode - 1]);
+            assertEq(w.owedSeen(), 0, "the debt was cleared before the extra BNB left");
+            assertEq(address(w).balance, 1 ether, "the extra came back and nothing else");
+            assertEq(_st(borrower).owed, 0);
+            assertEq(_st(borrower).onTime, 1);
+        }
+        assertEq(credit.totals().outstanding, 0);
     }
 
     function test_ladder_climbsToTheCapAndStopsThere() public {

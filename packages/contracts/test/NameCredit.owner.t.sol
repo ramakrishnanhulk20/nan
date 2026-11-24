@@ -11,7 +11,7 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {NameCredit} from "../src/NameCredit.sol";
 import {Base} from "./Base.t.sol";
-import {TestToken} from "./mocks/Hostile.sol";
+import {TestToken, RejectingWallet} from "./mocks/Hostile.sol";
 
 contract NameCreditOwnerTest is Base {
     function _unauthorized(address who) internal pure returns (bytes memory) {
@@ -211,6 +211,36 @@ contract NameCreditOwnerTest is Base {
         assertEq(_st(bob).due, block.timestamp + 1 days);
     }
 
+    function test_withdraw_anOwnerThatRefusesBnbFailsCleanly() public {
+        RejectingWallet stubborn = new RejectingWallet(credit);
+        vm.prank(owner);
+        credit.transferOwnership(address(stubborn));
+        stubborn.acceptOwnership();
+        vm.expectRevert(NameCredit.PayoutFailed.selector);
+        stubborn.withdraw(1);
+        assertEq(credit.totals().withdrawn, 0);
+        assertEq(address(credit).balance, 1 ether);
+    }
+
+    function test_settings_lapseAWeekAfterTheDelay() public {
+        vm.prank(owner);
+        credit.scheduleSettings(_next());
+        uint256 effectiveAt = START + 12 hours;
+
+        vm.warp(effectiveAt + 7 days + 1);
+        vm.expectRevert(abi.encodeWithSelector(NameCredit.SettingsLapsed.selector, effectiveAt + 7 days));
+        credit.applySettings();
+        (uint96 first,,,) = credit.settings();
+        assertEq(first, FIRST, "the stale change did not arrive");
+
+        vm.prank(owner);
+        credit.scheduleSettings(_next());
+        vm.warp(block.timestamp + 12 hours + 7 days);
+        credit.applySettings();
+        (first,,,) = credit.settings();
+        assertEq(first, 0.001 ether, "scheduled again, it applies up to the last second of the window");
+    }
+
     function test_settings_anOpenAdvanceKeepsItsTerms() public {
         _borrow(alice);
         vm.prank(owner);
@@ -379,6 +409,75 @@ contract NameCreditOwnerTest is Base {
         vm.prank(owner);
         vm.expectRevert(_unauthorized(owner));
         credit.pause();
+    }
+
+    /// The owner's powers are "exactly these and nothing else". This is the test that can fail on the
+    /// "nothing else": the complete list of what the compiled contract answers to. Adding, removing or
+    /// renaming any function breaks it until this list and the threat model are changed on purpose.
+    ///   Anyone may call: borrow, borrowWithPass, repay, markMissed, markMissedMany, applySettings.
+    ///   Owner only: topUp, withdraw, pause, unpause, scheduleSettings, cancelSettings, addPasses,
+    ///   revokePass, rescueToken, transferOwnership. Pending owner only: acceptOwnership.
+    ///   Everything else on the list is a read, and renounceOwnership always reverts.
+    function test_theContractAnswersToExactlyTheseFunctions() public view {
+        string[47] memory expected = [
+            "COOLING_OFF()",
+            "GRACE()",
+            "MAX_BATCH()",
+            "MAX_CAP()",
+            "MAX_FIRST_ADVANCE()",
+            "MAX_PACE_PER_DAY()",
+            "MAX_PAGE()",
+            "MAX_TERM()",
+            "MIN_FIRST_ADVANCE()",
+            "MIN_TERM()",
+            "REGISTRY()",
+            "SETTINGS_DELAY()",
+            "SETTINGS_WINDOW()",
+            "acceptOwnership()",
+            "addPasses(bytes32[],uint40)",
+            "applySettings()",
+            "borrow()",
+            "borrowWithPass(bytes32)",
+            "borrowerCount()",
+            "borrowersPage(uint256,uint256)",
+            "cancelSettings()",
+            "dayTally(uint32)",
+            "holdsAgentId(address)",
+            "markMissed(address)",
+            "markMissedMany(address[])",
+            "owner()",
+            "passExpiry(bytes32)",
+            "pause()",
+            "paused()",
+            "pendingOwner()",
+            "pendingSettings()",
+            "pendingSettingsAt()",
+            "pool()",
+            "quoteBorrow(address)",
+            "renounceOwnership()",
+            "repay(address)",
+            "rescueToken(address,uint256)",
+            "revokePass(bytes32)",
+            "scheduleSettings((uint96,uint96,uint32,uint32))",
+            "settings()",
+            "standingOf(address)",
+            "stepTally(uint8)",
+            "topUp()",
+            "totals()",
+            "transferOwnership(address)",
+            "unpause()",
+            "withdraw(uint256)"
+        ];
+        string memory artifact = vm.readFile("out/NameCredit.sol/NameCredit.json");
+        string[] memory actual = vm.parseJsonKeys(artifact, ".methodIdentifiers");
+        assertEq(actual.length, expected.length, "a function was added or removed");
+        for (uint256 i; i < expected.length; ++i) {
+            bool found = false;
+            for (uint256 j; j < actual.length; ++j) {
+                if (keccak256(bytes(actual[j])) == keccak256(bytes(expected[i]))) found = true;
+            }
+            assertTrue(found, expected[i]);
+        }
     }
 
     function test_owner_hasNoWayToEditARecord() public {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-// Threat model rules C1, C2 and C9: what happens when the registry lies, breaks, stalls or floods.
+// Threat model rules C1, C2 and C11: what happens when the registry lies, breaks, stalls or floods.
 // The registry here is a stand-in that returns whatever raw bytes the test sets.
 // What this file does NOT cover: the real registry's behaviour (NameCredit.fork.t.sol), and a registry whose
 // owner issues real names to an attacker, which this contract cannot tell from an honest registration.
@@ -15,6 +15,14 @@ contract NameCreditRegistryTest is Base {
     bytes4 internal constant BALANCE = IAgentIdRegistry.balanceOf.selector;
     bytes4 internal constant HANDLE = IAgentIdRegistry.handleOf.selector;
     bytes4 internal constant OWNER_OF = IAgentIdRegistry.ownerOfHandle.selector;
+
+    // Measured with the ceilings in place: 68,895, 72,386 and 85,611 gas for a stall in the first, second
+    // and third read, and 46,636 to 70,035 for a flood. The bounds sit a little above. Copying the flood
+    // back would add about 38,000, and a stall with no ceiling would take nearly all the gas sent.
+    uint256 internal constant SPIN_BOUND_FIRST = 75_000;
+    uint256 internal constant SPIN_BOUND_SECOND = 80_000;
+    uint256 internal constant SPIN_BOUND_THIRD = 95_000;
+    uint256 internal constant FLOOD_BOUND = 80_000;
 
     RawRegistry internal raw;
     NameCredit internal rawCredit;
@@ -67,20 +75,47 @@ contract NameCreditRegistryTest is Base {
         _assertRefused("balanceOf answers two words");
     }
 
-    function test_balance_aRegistryThatSpinsCostsTheCallerABoundedAmount() public {
-        raw.set(BALANCE, 2, "");
-        uint256 gasBefore = gasleft();
-        assertFalse(rawCredit.holdsAgentId(mallory));
-        assertLt(gasBefore - gasleft(), 120_000, "one stalled read costs at most its ceiling");
-        _assertRefused("balanceOf spins");
+    /// A read that never answers costs the caller its 60,000 gas ceiling and little more, whichever of the
+    /// three reads it is. With no ceiling it would take 63/64 of everything the caller sent.
+    function test_aStalledReadCostsTheCallerABoundedAmount() public {
+        bytes4[3] memory reads = [BALANCE, HANDLE, OWNER_OF];
+        uint256[3] memory bounds = [uint256(SPIN_BOUND_FIRST), SPIN_BOUND_SECOND, SPIN_BOUND_THIRD];
+        for (uint256 i; i < 3; ++i) {
+            _honest("mallory", mallory);
+            raw.set(reads[i], 2, "");
+            uint256 gasBefore = gasleft();
+            assertFalse(rawCredit.holdsAgentId(mallory));
+            uint256 used = gasBefore - gasleft();
+            emit log_named_uint("gas for a check with one stalled read", used);
+            assertLt(used, bounds[i], "one stalled read costs its ceiling and little more");
+            _assertRefused("a read spins");
+        }
     }
 
-    function test_balance_aFloodOfReturnDataIsRefused() public {
-        raw.set(BALANCE, 3, "");
-        uint256 gasBefore = gasleft();
-        assertFalse(rawCredit.holdsAgentId(mallory));
-        assertLt(gasBefore - gasleft(), 120_000);
-        _assertRefused("balanceOf floods");
+    /// The flood opens with a well-formed answer, so nothing but the size ceiling can refuse it, and the
+    /// caller must not pay to copy it. The name is 40 bytes so that its honest answer fills all 128 bytes
+    /// the contract is willing to read.
+    function test_aFloodOfReturnDataIsRefusedOnEveryRead() public {
+        string memory name = "a40bytenameaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        assertEq(bytes(name).length, 40);
+        bytes4[3] memory reads = [BALANCE, HANDLE, OWNER_OF];
+        bytes[3] memory wellFormed = [abi.encode(uint256(1)), abi.encode(name), abi.encode(mallory)];
+        for (uint256 i; i < 3; ++i) {
+            _honest(name, mallory);
+            assertTrue(rawCredit.holdsAgentId(mallory), "the honest answers are accepted");
+            raw.set(reads[i], 3, wellFormed[i]);
+
+            (bool ok, bytes memory flood) = address(raw).staticcall{gas: 60_000}(abi.encodeWithSelector(reads[i], mallory));
+            assertTrue(ok, "the flood fits inside the gas the contract allows a read");
+            assertEq(flood.length, raw.FLOOD(), "and it really is a flood");
+
+            uint256 gasBefore = gasleft();
+            assertFalse(rawCredit.holdsAgentId(mallory));
+            uint256 used = gasBefore - gasleft();
+            emit log_named_uint("gas for a check with one flooded read", used);
+            assertLt(used, FLOOD_BOUND, "the caller did not pay to copy the flood");
+            _assertRefused("a read floods");
+        }
     }
 
     function test_handle_revertEmptyOrMalformedIsRefused() public {
@@ -111,13 +146,6 @@ contract NameCreditRegistryTest is Base {
         _assertRefused("65 byte name");
     }
 
-    function test_handle_spinOrFloodIsRefused() public {
-        raw.set(HANDLE, 2, "");
-        _assertRefused("handleOf spins");
-        raw.set(HANDLE, 3, "");
-        _assertRefused("handleOf floods");
-    }
-
     function test_ownerOf_revertMismatchOrDirtyIsRefused() public {
         raw.set(OWNER_OF, 1, "");
         _assertRefused("ownerOfHandle reverts");
@@ -129,10 +157,6 @@ contract NameCreditRegistryTest is Base {
         _assertRefused("address with stray high bits");
         raw.set(OWNER_OF, 0, abi.encode(mallory, mallory));
         _assertRefused("two words");
-        raw.set(OWNER_OF, 2, "");
-        _assertRefused("ownerOfHandle spins");
-        raw.set(OWNER_OF, 3, "");
-        _assertRefused("ownerOfHandle floods");
     }
 
     function test_aNameThatChangesIsRefused() public {
@@ -157,10 +181,27 @@ contract NameCreditRegistryTest is Base {
         raw.set(OWNER_OF, 2, "");
 
         assertEq(rawCredit.standingOf(mallory).owed, FIRST);
+        skip(TERM + GRACE + 1);
+        rawCredit.markMissed(mallory);
+        assertTrue(rawCredit.standingOf(mallory).missed);
         vm.prank(nobody);
         rawCredit.repay{value: FIRST}(mallory);
         assertEq(rawCredit.standingOf(mallory).owed, 0);
-        assertEq(rawCredit.standingOf(mallory).step, 1);
+        assertEq(rawCredit.standingOf(mallory).late, 1);
+    }
+
+    /// The name on file is not enough. A borrower who was served before is asked about again, every time.
+    function test_aReturningBorrowerIsRefusedOnceTheRegistryStopsAnswering() public {
+        _borrow(alice);
+        _repay(alice);
+        vm.warp(START + TERM);
+        vm.etch(address(registry), hex"fe");
+        (NameCredit.Refusal r,,) = credit.quoteBorrow(alice);
+        assertEq(uint8(r), uint8(NameCredit.Refusal.NoAgentId));
+        vm.prank(alice);
+        vm.expectRevert(NameCredit.NoAgentId.selector);
+        credit.borrow();
+        assertEq(_st(alice).owed, 0);
     }
 
     function test_theRealRegistryReplacedByBrokenCodeCannotBlockRepayment() public {
@@ -215,6 +256,24 @@ contract NameCreditRegistryTest is Base {
             (uint256 offset, uint256 length) = abi.decode(answer, (uint256, uint256));
             canonical = offset == 32 && length >= 1 && length <= 64 && answer.length == 64 + ((length + 31) / 32) * 32;
         }
+        assertEq(rawCredit.holdsAgentId(mallory), canonical);
+        vm.prank(mallory);
+        if (!canonical) vm.expectRevert(NameCredit.NoAgentId.selector);
+        rawCredit.borrow();
+    }
+
+    /// The same rule with answers built from parts, so that the accepting side is reached about one run in
+    /// ten. Random bytes almost never form an acceptable answer.
+    function testFuzz_nameAnswersBuiltFromParts(bool rightOffset, uint8 length, uint8 words) public {
+        length = uint8(bound(length, 0, 70));
+        words = uint8(bound(words, 0, 3));
+        bytes memory answer = abi.encodePacked(uint256(rightOffset ? 32 : 64), uint256(length));
+        for (uint256 i; i < words; ++i) {
+            answer = bytes.concat(answer, bytes32("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
+        }
+        raw.set(HANDLE, 0, answer);
+
+        bool canonical = rightOffset && length >= 1 && length <= 64 && words == (uint256(length) + 31) / 32;
         assertEq(rawCredit.holdsAgentId(mallory), canonical);
         vm.prank(mallory);
         if (!canonical) vm.expectRevert(NameCredit.NoAgentId.selector);

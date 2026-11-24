@@ -14,7 +14,7 @@ gas_reports = ["NameCredit"]
 # The 16-day simulation makes several thousand calls in one test.
 gas_limit = "18446744073709551615"
 memory_limit = 1073741824
-fs_permissions = [{ access = "read-write", path = "./deployments" }]
+fs_permissions = [{ access = "read-write", path = "./deployments" }, { access = "read", path = "./out" }]
 
 [fuzz]
 runs = 1000
