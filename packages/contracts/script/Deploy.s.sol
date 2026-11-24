@@ -6,12 +6,13 @@ import {VmSafe} from "forge-std/Vm.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {NameCredit} from "../src/NameCredit.sol";
 import {HandleRegistry} from "../test/mocks/HandleRegistry.sol";
+import {MainnetPlan} from "./Plan.sol";
 
 /// @notice Deploys NameCredit and, when run with --broadcast, writes the addresses to
 ///         deployments/<chain id>.json. A dry run writes nothing. The file is written before the
 ///         transactions are confirmed, so if a broadcast fails part-way, delete it: the scripts that read
 ///         it check the chain first and stop when the address holds no pool.
-///         On BNB Smart Chain mainnet it uses the real Agent ID registry and the settings written below.
+///         On BNB Smart Chain mainnet it uses the real Agent ID registry and the settings written in Plan.sol.
 ///         On BNB testnet, where no Agent ID registry exists, it first deploys a stand-in from the registry's
 ///         own verified source, owned by the deployer so that test names can be issued.
 /// @dev    Mainnet needs OWNER and CONFIRM_MAINNET_OWNER set to the same address. The owner is typed twice
@@ -21,18 +22,11 @@ import {HandleRegistry} from "../test/mocks/HandleRegistry.sol";
 ///         reach a pool that holds real money.
 ///         Testnet signs with SECURITY_TESTNET_KEY, a wallet that only ever holds test BNB, and accepts
 ///         FIRST_ADVANCE_WEI, CAP_WEI, TERM_SECONDS and PACE_PER_DAY so the attack scripts can use a short term.
-contract Deploy is Script {
-    address internal constant MAINNET_REGISTRY = 0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F;
+contract Deploy is Script, MainnetPlan {
     /// @dev This project's testnet-only wallet. Its key sits in a file, so it must never own a mainnet pool.
     ///      Written here so the check does not depend on the environment being loaded.
     address internal constant TESTNET_ONLY_WALLET = 0xF6010Cf5E9d5a33531ae0479c33aA48d958eFfA5;
-    uint256 internal constant BSC_MAINNET = 56;
     uint256 internal constant BSC_TESTNET = 97;
-
-    uint96 internal constant FIRST_ADVANCE = 0.0003 ether;
-    uint96 internal constant CAP = 0.0048 ether;
-    uint32 internal constant TERM = 3 days;
-    uint32 internal constant PACE_PER_DAY = 100;
 
     function run() external returns (NameCredit credit, address registry) {
         require(block.chainid == BSC_MAINNET || block.chainid == BSC_TESTNET, "BNB Smart Chain mainnet or testnet only");

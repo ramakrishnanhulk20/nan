@@ -155,7 +155,7 @@ Test files are in `packages/contracts/test`. Every test passes at the time of wr
 | C18 | `test_pass_skipsThePaceOnceAndOnlyOnce`, `test_pass_unknownExpiredOrRevokedIsRefused`, `test_pass_doesNotWaiveAnyOtherRule`, `test_pass_doesNotSkipTheCoolingOff`, `test_pass_isRefusedAboveTheFirstStepAndStaysUnused` |
 | C19 | By reading the source: no `string` or `bytes` in storage or in any event. `invariant_everyAdvanceIsCountedOnce` checks that the counters agree with each other |
 | C20 | Not provable yet: the website does not exist. It becomes a check on the site when it is built |
-| C21 | Not provable yet: nothing is on mainnet. The deploy script's refusals were checked by dry runs on a fork of mainnet |
+| C21 | Not provable yet: nothing is on mainnet. `script/Check.s.sol` is the check, with no key needed. The deploy, the check, the owner's top-up and a real holder's borrow and repayment were rehearsed together on a private fork of mainnet, and the deploy script's refusals were shown by dry runs there |
 
 What these tests do not cover: a transaction signed by a real Agentic Wallet, Binance's own preview and risk check, and how real people behave. Those need the mainnet deployment.
 
