@@ -106,6 +106,15 @@ function runTests() {
   return { code: r.status, text, failed: [...new Set(failed)] };
 }
 
+// Which commit the source and tests came from, so the record can be matched to the code it was made on.
+function sourceStamp() {
+  const git = (args) => spawnSync("git", args, { cwd: root, encoding: "utf8" });
+  const head = git(["rev-parse", "--short", "HEAD"]);
+  if (head.status !== 0) return "source and tests: not in a git checkout";
+  const dirty = git(["status", "--porcelain", "--", "packages/contracts/src", "packages/contracts/test"]).stdout.trim();
+  return `source and tests: ${dirty ? "CHANGED since" : "exactly as at"} commit ${head.stdout.trim()}`;
+}
+
 const lines = [];
 const save = () => writeFileSync(outFile, lines.join("\n") + "\n");
 let caught = 0;
@@ -116,6 +125,7 @@ try {
   const base = runTests();
   const summary = base.text.split("\n").filter((line) => /tests passed/.test(line)).pop() || "no summary line";
   lines.push(`run started ${new Date().toISOString()}`);
+  lines.push(sourceStamp());
   lines.push(`unchanged source: ${summary.trim()}`);
   lines.push("");
   if (base.code !== 0) {

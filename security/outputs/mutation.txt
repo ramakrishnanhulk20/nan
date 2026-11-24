@@ -1,5 +1,6 @@
-run started 2026-11-24T09:22:49.130Z
-unchanged source: Ran 5 test suites in 2.54s (4.66s CPU time): 87 tests passed, 0 failed, 0 skipped (87 total tests)
+run started 2026-11-24T09:36:48.813Z
+source and tests: exactly as at commit e46bc8a
+unchanged source: Ran 5 test suites in 2.95s (5.22s CPU time): 87 tests passed, 0 failed, 0 skipped (87 total tests)
 
 CAUGHT    on-time boundary moved by one second -> 1 failed: test_repay_lastSecondOfGraceIsOnTime
 CAUGHT    one advance per term removed -> 4 failed: test_quoteBorrow_namesTheFirstRuleThatStopsAnAdvance, test_repay_lastSecondOfGraceIsOnTime, test_repay_onTimeMovesUpOneStepAndWaitsOutTheTerm, testFuzz_repaymentTimeDecidesTheOutcome
@@ -17,11 +18,11 @@ CAUGHT    anyone can withdraw -> 1 failed: test_withdraw_ownerOnlyAndOnlyWhatIsH
 CAUGHT    step keeps rising at the cap -> 3 failed: test_settings_aLowerCapPullsTheLadderDown, test_ladder_climbsToTheCapAndStopsThere, testFuzz_everyAdvanceSitsBetweenTheFirstAdvanceAndTheCap
 CAUGHT    missed count not corrected on late repayment -> 2 failed: test_markMissed_aLaterRepaymentTurnsItIntoLate, test_handlerReallyLendsRepaysAndMarks
 CAUGHT    non-canonical name reply accepted -> 2 failed: testFuzz_nameAnswersBuiltFromParts, test_handle_revertEmptyOrMalformedIsRefused
-CAUGHT    stored pace has no ceiling -> 4 failed: test_settings_aFasterPaceDoesNotRefillTheStore, test_pace_doesNotApplyAboveTheFirstStep, test_pace_unusedSlotsStopBuildingAfterOneHour, testFuzz_aQuietSpellStoresAtMostTheCeiling
+CAUGHT    stored pace has no ceiling -> 4 failed: test_pace_doesNotApplyAboveTheFirstStep, test_pace_unusedSlotsStopBuildingAfterOneHour, test_settings_aFasterPaceDoesNotRefillTheStore, testFuzz_aQuietSpellStoresAtMostTheCeiling
 CAUGHT    a changed name is accepted -> 1 failed: test_aNameThatChangesIsRefused
-CAUGHT    repayment can be paused -> 2 failed: test_pause_ownerOnlyStopsNewAdvancesNotRepayment, test_repay_worksWhilePaused
-CAUGHT    repayment does not clear the debt -> 23 failed: test_settings_aLowerCapPullsTheLadderDown, test_ladder_climbsToTheCapAndStopsThere, test_pace_doesNotApplyAboveTheFirstStep, test_pass_doesNotSkipTheCoolingOff
-CAUGHT    limit grows in a line, not by doubling -> 3 failed: test_settings_aLowerCapPullsTheLadderDown, test_ladder_climbsToTheCapAndStopsThere, testFuzz_everyAdvanceSitsBetweenTheFirstAdvanceAndTheCap
+CAUGHT    repayment can be paused -> 2 failed: test_repay_worksWhilePaused, test_pause_ownerOnlyStopsNewAdvancesNotRepayment
+CAUGHT    repayment does not clear the debt -> 23 failed: test_aDeadRegistryCannotBlockRepaymentOrMarking, test_aNameThatChangesIsRefused, test_aReturningBorrowerIsRefusedOnceTheRegistryStopsAnswering, test_theRealRegistryReplacedByBrokenCodeCannotBlockRepayment
+CAUGHT    limit grows in a line, not by doubling -> 3 failed: test_ladder_climbsToTheCapAndStopsThere, test_settings_aLowerCapPullsTheLadderDown, testFuzz_everyAdvanceSitsBetweenTheFirstAdvanceAndTheCap
 CAUGHT    extra BNB kept instead of returned -> 5 failed: test_repay_aPayerThatRefusesItsChangeFailsOnlyItsOwnCall, test_repay_extraIsReturnedToThePayer, test_repay_reenteringOnTheRefundFails, testFuzz_repaymentTimeDecidesTheOutcome
 CAUGHT    zero balance in the registry accepted -> 1 failed: test_balance_revertZeroOrWrongSizeIsRefused
 CAUGHT    anyone can top up -> 1 failed: test_topUp_ownerOnlyAndCounted
@@ -32,15 +33,15 @@ CAUGHT    plain transfers accepted -> 1 failed: test_plainTransferIsRefused
 CAUGHT    registry read has no gas ceiling -> 1 failed: test_aStalledReadCostsTheCallerABoundedAmount
 CAUGHT    outstanding total not reduced on repayment -> 2 failed: test_repay_onTimeMovesUpOneStepAndWaitsOutTheTerm, test_repay_reenteringOnTheRefundFails
 CAUGHT    empty pool not checked before paying out -> 2 failed: test_borrow_refusesWhenThePoolIsShort, test_reserve_aRepeatBorrowerLeavesOneDayOfFirstAdvances
-CAUGHT    cap limit not enforced on settings -> 2 failed: test_settings_outOfBoundsRefusedAndCancelWorks, testFuzz_settingsNearTheLimits
+CAUGHT    cap limit not enforced on settings -> 3 failed: test_settings_outOfBoundsRefusedAndCancelWorks, testFuzz_settingsAreAcceptedExactlyInsideTheLimits, testFuzz_settingsNearTheLimits
 CAUGHT    first advance floor not enforced on settings -> 3 failed: test_constructor_refusesSettingsOutsideTheLimits, testFuzz_settingsAreAcceptedExactlyInsideTheLimits, testFuzz_settingsNearTheLimits
-CAUGHT    term ceiling not enforced on settings -> 2 failed: testFuzz_settingsAreAcceptedExactlyInsideTheLimits, testFuzz_settingsNearTheLimits
+CAUGHT    term ceiling not enforced on settings -> 1 failed: testFuzz_settingsNearTheLimits
 CAUGHT    pace ceiling not enforced on settings -> 1 failed: testFuzz_settingsNearTheLimits
 CAUGHT    missed flag never set -> 8 failed: test_handlerReallyLendsRepaysAndMarks, test_markMissedMany_marksOnlyTheOverdueOnes, test_markMissed_aLaterRepaymentTurnsItIntoLate, test_markMissed_onlyAfterGraceAndOnlyOnce
 CAUGHT    ownership can be renounced -> 1 failed: test_ownership_movesInTwoStepsAndCannotBeRenounced
 CAUGHT    withdrawals not counted -> 1 failed: test_withdraw_ownerOnlyAndOnlyWhatIsHere
 CAUGHT    batch limit removed on marking -> 1 failed: test_markMissedMany_marksOnlyTheOverdueOnes
-CAUGHT    underpayment accepted -> 3 failed: test_repay_refusesLessThanOwed, testFuzz_aStrangerCanOnlySettleNeverSpoil, test_settings_anOpenAdvanceKeepsItsTerms
+CAUGHT    underpayment accepted -> 3 failed: test_settings_anOpenAdvanceKeepsItsTerms, test_repay_refusesLessThanOwed, testFuzz_aStrangerCanOnlySettleNeverSpoil
 CAUGHT    name reply with a wrong offset accepted -> 2 failed: testFuzz_nameAnswersBuiltFromParts, test_handle_revertEmptyOrMalformedIsRefused
 CAUGHT    stranger can issue passes -> 1 failed: test_addPasses_ownerOnlyWithLimits
 CAUGHT    stranger can schedule settings -> 1 failed: test_settings_scheduleThenApplyAfterTheDelay
