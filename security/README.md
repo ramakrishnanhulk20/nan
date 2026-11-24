@@ -47,7 +47,7 @@ Do not run these with `-vvvv`. At that level Foundry prints the values its scrip
 
 ## Do the tests notice a broken contract?
 
-`security/mutation.mjs` answers that. It takes a private copy of the source, breaks one rule at a time (51 breaks: a boundary moved by a second, an owner check removed, the pace never used up, the BNB sent before the debt is recorded, an extra owner function added, and so on), and runs the test suite against each broken copy. A break the tests do not notice is a hole in the tests.
+`security/mutation.mjs` answers that. It takes a private copy of the source, breaks one rule at a time (52 breaks: a boundary moved by a second, an owner check removed, the pace never used up, the BNB sent before the debt is recorded, an extra owner function added, and so on), and runs the test suite against each broken copy. A break the tests do not notice is a hole in the tests.
 
 ```bash
 node security/mutation.mjs

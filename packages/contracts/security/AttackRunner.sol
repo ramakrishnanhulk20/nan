@@ -17,6 +17,7 @@ contract Puppet {
     address private immutable BOSS;
     NameCredit private immutable CREDIT;
     uint8 public mode; // on receiving BNB: 1 borrow again, 2 repay itself, 3 mark itself missed
+    address public watch;
     bool public calledBack;
     bool public callBackWentThrough;
     bytes4 public innerReason;
@@ -29,6 +30,7 @@ contract Puppet {
     constructor(NameCredit credit) {
         BOSS = msg.sender;
         CREDIT = credit;
+        watch = address(this);
     }
 
     modifier onlyBoss() {
@@ -41,7 +43,14 @@ contract Puppet {
         calledBack = false;
         callBackWentThrough = false;
         innerReason = bytes4(0);
-        owedSeen = 0;
+        // Not zero: zero has to mean "looked, and nothing was owed", never "did not look".
+        owedSeen = type(uint256).max;
+    }
+
+    /// Whose debt this wallet looks at from inside a payment: its own by default, the borrower's when it is
+    /// paying for someone else.
+    function setWatch(address who) external onlyBoss {
+        watch = who;
     }
 
     function borrow() external onlyBoss returns (uint256) {
@@ -76,7 +85,7 @@ contract Puppet {
 
     receive() external payable {
         if (mode == 0) return;
-        owedSeen = CREDIT.standingOf(address(this)).owed;
+        owedSeen = CREDIT.standingOf(watch).owed;
         bytes memory data;
         uint256 value;
         if (mode == 1) {
@@ -272,7 +281,10 @@ contract AttackRunner {
                 revert SetupFailed("the advance under attack did not go through");
             }
             bool refused = p.calledBack() && !p.callBackWentThrough();
-            _push(attacks[m], rules[m], refused && p.innerReason() == expected[m] && p.owedSeen() != 0, refused, p.innerReason(), expected[m]);
+            // What the wallet saw of its own debt from inside the payout must be the whole advance.
+            uint256 owedNow = CREDIT.standingOf(address(p)).owed;
+            bool booksFirst = owedNow != 0 && p.owedSeen() == owedNow;
+            _push(attacks[m], rules[m], refused && booksFirst && p.innerReason() == expected[m], refused, p.innerReason(), expected[m]);
             p.setMode(0);
         }
     }
@@ -284,12 +296,23 @@ contract AttackRunner {
         uint256 owed = CREDIT.standingOf(b).owed;
         if (owed == 0) revert SetupFailed("no open advance to repay");
         p.setMode(1);
+        p.setWatch(b);
         try p.repayFor{value: owed + 1}(b) {}
         catch {
             revert SetupFailed("the repayment under attack did not go through");
         }
         bool refused = p.calledBack() && !p.callBackWentThrough();
-        _push("borrow from inside the refund of an overpayment", "C15", refused && p.innerReason() == GUARD, refused, p.innerReason(), GUARD);
+        // What the payer saw of the borrower's debt from inside the refund must be nothing: cleared first.
+        bool booksFirst = p.owedSeen() == 0;
+        _push(
+            "borrow from inside the refund of an overpayment",
+            "C15",
+            refused && booksFirst && p.innerReason() == GUARD,
+            refused,
+            p.innerReason(),
+            GUARD
+        );
+        p.setWatch(address(p));
         p.setMode(0);
         if (CREDIT.standingOf(b).owed != 0 || CREDIT.standingOf(b).step != 1) revert SetupFailed("an on-time repayment did not add a step");
     }
@@ -480,7 +503,7 @@ contract AttackRunner {
     /// back for newcomers. The operator has set the pool's balance just under what that needs.
     function intoTheReserve(uint256 i) external onlyOperator {
         address borrower = address(puppets[i]);
-        if (CREDIT.standingOf(borrower).step == 0) revert SetupFailed("the wallet is at the first step");
+        if (CREDIT.standingOf(borrower).step != 1) revert SetupFailed("the wallet is not at the second step");
         _attack(
             "a repeat borrower takes the pool below the newcomers' reserve",
             "C9",

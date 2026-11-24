@@ -70,6 +70,7 @@ const MUTATIONS = [
   ["stranger can pause", "function pause() external onlyOwner {", "function pause() external {"],
   ["a pass can be spent above the first step", "        if (_accounts[msg.sender].step != 0) revert PassNotNeeded();\n", ""],
   ["a pass skips the wait after a late repayment", "if (block.timestamp < a.notBefore) revert TooEarly(a.notBefore);", "if (!withPass && block.timestamp < a.notBefore) revert TooEarly(a.notBefore);"],
+  ["a faster pace refills the store at once", "_paceCredit = (credit > ceiling ? ceiling : credit).toUint64();", "_paceCredit = ceiling.toUint64();"],
   ["scheduled settings never lapse", "        if (block.timestamp > effectiveAt + SETTINGS_WINDOW) revert SettingsLapsed(effectiveAt + SETTINGS_WINDOW);\n", ""],
   ["a returning borrower is served on the name on file", "bytes32 nameHash = _nameHashOf(msg.sender);\n        if (nameHash == bytes32(0)) revert NoAgentId();", "bytes32 nameHash = _nameHashOf(msg.sender);\n        if (nameHash == bytes32(0)) nameHash = a.nameHash;\n        if (nameHash == bytes32(0)) revert NoAgentId();"],
   ["an open advance is re-priced when the settings change", "        uint256 owed = a.owed;\n        if (owed == 0) revert NothingOwed();\n        if (msg.value < owed)", "        uint256 owed = a.owed == 0 ? 0 : _limit(a.step, settings);\n        if (owed == 0) revert NothingOwed();\n        if (msg.value < owed)"],

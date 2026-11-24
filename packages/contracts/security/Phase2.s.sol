@@ -3,7 +3,9 @@ pragma solidity 0.8.28;
 
 // SECURITY TEST ONLY. The attacks that need time to pass. Run at least 25 hours after Phase1, once the advance
 // left open there is past its due time and its day of grace, and within 7 days of it, while the settings
-// scheduled there can still be applied. BNB testnet only.
+// scheduled there can still be applied. Anyone may apply those settings once their delay has passed; if
+// somebody else already has, this script stops before it sends anything and the burst check needs a fresh
+// deployment. BNB testnet only.
 // Run from packages/contracts:  forge script security/Phase2.s.sol --rpc-url $BSC_TESTNET_RPC_URL --broadcast
 
 import {Script, console} from "forge-std/Script.sol";
