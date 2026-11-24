@@ -16,6 +16,7 @@ reference/
 .env
 .env.*
 !.env.example
+passes/
 
 # dependencies and build output
 node_modules/
