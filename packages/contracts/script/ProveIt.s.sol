@@ -70,7 +70,7 @@ contract ProveIt is Script {
         console.log("NameCredit", address(credit));
         console.log("borrower name", string.concat(name, ".ai (issued by the testnet stand-in registry)"));
         console.log("borrower wallet", address(borrower));
-        console.log("1. borrowed with nothing locked, wei", amount);
+        console.log("1. borrowed with nothing locked (with a pass, so the result does not depend on the pace), wei", amount);
         console.log("   borrower now holds, wei", held);
         console.log("   pool went down by, wei", poolWentDownBy);
         console.log("   owed, wei", open.owed);
