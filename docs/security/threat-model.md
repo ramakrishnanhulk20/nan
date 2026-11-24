@@ -15,7 +15,7 @@ One contract on BNB Smart Chain, `NameCredit`, lends small amounts of BNB from a
 - **Repay.** Anyone calls `repay(borrower)` and attaches the amount owed. The contract marks the advance repaid. Repaid by the due time plus one day of grace, the borrower's limit moves up one step, up to a fixed cap, and the next advance can start once the original term has ended. Repaid later, the borrower starts again at the first step after a seven day wait. Extra BNB sent by mistake is returned in the same transaction.
 - **Mark missed.** After the due time plus grace, anyone can call `markMissed(borrower)`. It only updates counters and the borrower's standing.
 - **Read.** View functions return a wallet's standing, the pool's state, and running counters for every step of the ladder and every day. The website shows only what these return.
-- **Owner.** The owner can add BNB, pause new advances, withdraw BNB that is in the contract, change four numbers (first advance, term, cap, release pace) inside limits fixed in the code after a 12 hour public delay (a scheduled change that nobody applies within 7 days of that lapses), issue and cancel passes, and recover a token sent here by mistake. Ownership moves in two steps and cannot be given up.
+- **Owner.** The owner can add BNB, pause new advances, withdraw BNB that is in the contract, change four numbers (first advance, term, cap, release pace) inside limits fixed in the code after a 12 hour public delay (a scheduled change can be cancelled, and one that nobody applies within 7 days of the delay lapses), issue and cancel passes, and recover a token sent here by mistake. Ownership moves in two steps and cannot be given up.
 
 Two rules shape who gets served. First advances are released at a steady pace, with at most one hour of unused pace stored (or one advance, where an hour of pace is less than one), so a crowd cannot empty the pool in one block. Passes, which only the owner can issue, are the one way round the pace. Advances above the first step always leave one day of first advances in the pool, so borrowers who repay and double their limit cannot crowd newcomers out.
 
@@ -86,7 +86,7 @@ What these two rest on: a record here is kept per wallet, so "cannot come back a
 
 **One line of credit per person**
 - C3. A wallet has at most one open advance at any time.
-- C4. An advance is never more than the wallet's limit: the first advance doubled once per step, held to the cap, under the settings in force when the advance is made. A wallet's step rises only by one, only through an on-time repayment of the full amount. The owner can move every wallet's limit at once by changing the first advance or the cap, inside the fixed bounds and after the public delay. The owner cannot move anyone's step.
+- C4. An advance is never more than the wallet's limit: the first advance doubled once per step, held to the cap, under the settings in force when the advance is made. A wallet's step rises only by one, only through an on-time repayment of the full amount. The owner can move every wallet's limit at once by changing the first advance or the cap, inside the fixed bounds and after the public delay. The owner cannot edit anyone's step. What the cap does decide is whether an on-time repayment adds one: a wallet whose limit already equals the cap stays on its step, so a lower cap stops every climb sooner and a higher one lets it go on.
 - C5. A wallet that repaid late or was marked missed cannot borrow until it has settled in full and seven days have passed, and then only at the first step.
 - C6. One advance per term. After an on-time repayment the next advance cannot start before the due time of the one just repaid, so paying back in a minute does not let a borrower run up the ladder in an hour.
 
@@ -108,7 +108,7 @@ What these two rest on: a record here is kept per wallet, so "cannot come back a
 - C15. Every function that sends BNB changes state first and sends last, under a reentrancy guard. A recipient that reverts, re-enters or burns gas can make only its own call fail.
 
 **The owner**
-- C16. The owner's powers are exactly: add BNB; pause and unpause new advances; withdraw BNB from the contract; schedule a change to first advance, term, cap or release pace inside limits fixed in the code, which anyone can bring into force from the end of the 12 hour delay until 7 days later and not after; issue and cancel passes; recover a token sent here by mistake; hand over ownership in two steps. Nothing else. A test pins the complete list of functions the contract answers to.
+- C16. The owner's powers are exactly: add BNB; pause and unpause new advances; withdraw BNB from the contract; schedule a change to first advance, term, cap or release pace inside limits fixed in the code, which anyone can bring into force from the end of the 12 hour delay until 7 days later and not after; cancel a scheduled change; issue and cancel passes; recover a token sent here by mistake; hand over ownership in two steps. Nothing else. A test pins the complete list of functions the contract answers to.
 - C17. The contract cannot be upgraded, and has no function that moves BNB to any address other than a borrower (their advance), a repayer (their extra) or the owner (a withdrawal).
 
 **Passes**
@@ -119,7 +119,7 @@ What these two rest on: a record here is kept per wallet, so "cannot come back a
 - C20. Every figure the website shows comes from a view call on this contract or the registry. The instruction text contains only the fixed contract address, a fixed function and an amount read from the contract.
 
 **The deployment is the one that was published**
-- C21. The mainnet contract's registry, owner and four settings are the ones stated in the README, and anyone can check that with three reads. On mainnet the deploy script takes the settings from its own source and not from the environment, refuses the testnet wallet as owner, and needs the owner address typed twice.
+- C21. At deployment, the mainnet contract's registry, owner and four settings are the ones stated in the README, and anyone can check that with three reads. Every later change of settings is a public event, and the README records each one that has been applied. On mainnet the deploy script takes the settings from its own source and not from the environment, refuses this project's testnet wallet as owner whether or not the environment names it, and needs the owner address typed twice.
 
 ### The five general standards, applied
 
@@ -131,7 +131,7 @@ What these two rest on: a record here is kept per wallet, so "cannot come back a
 
 ## D. Where each rule is proven
 
-Test files are in `packages/contracts/test`. Every test passes at the time of writing: 94 as the test tool counts them (it runs the five invariants as one campaign), including 12 fuzz tests at 1,000 runs each and 5 invariants over 20,000 random calls.
+Test files are in `packages/contracts/test`. Every test passes at the time of writing: 95 as the test tool counts them (it runs the five invariants as one campaign), including 12 fuzz tests at 1,000 runs each and 5 invariants over 20,000 random calls.
 
 | Rule | Test |
 |---|---|
@@ -142,7 +142,7 @@ Test files are in `packages/contracts/test`. Every test passes at the time of wr
 | C5 | `test_repay_oneSecondAfterGraceIsLate`, `test_markMissed_onlyAfterGraceAndOnlyOnce`, `test_pass_doesNotSkipTheCoolingOff` |
 | C6 | `test_repay_onTimeMovesUpOneStepAndWaitsOutTheTerm`, `testFuzz_repaymentTimeDecidesTheOutcome` |
 | C7 | `invariant_theBooksBalance`, `test_forcedBnbChangesNoRecordAndTheOwnerCanTakeIt`, `test_repay_extraIsReturnedToThePayer` |
-| C8 | The ceiling of the store: `test_pace_unusedSlotsStopBuildingAfterOneHour`, `testFuzz_aQuietSpellStoresAtMostTheCeiling`, `test_settings_storedPaceIsHeldToTheNewCeiling`. The running total: `test_pace_fifthFirstAdvanceInOneBlockMustWait`, `testFuzz_firstAdvancesNeverBeatThePace`. Passes as the exception: `test_paceOfZero_onlyAPassCanStartAFirstAdvance`. On the real registry: `test_fork_holdersGetOneAdvanceEachAndThePaceHolds`, which is skipped, not passed, when the fork has fewer than five recent holders |
+| C8 | The ceiling of the store: `test_pace_unusedSlotsStopBuildingAfterOneHour`, `testFuzz_aQuietSpellStoresAtMostTheCeiling`, `test_settings_storedPaceIsHeldToTheNewCeiling`, and `test_settings_aFasterPaceDoesNotRefillTheStore` for the change of pace. The running total: `test_pace_fifthFirstAdvanceInOneBlockMustWait`, `testFuzz_firstAdvancesNeverBeatThePace`. Passes as the exception: `test_paceOfZero_onlyAPassCanStartAFirstAdvance`. On the real registry: `test_fork_holdersGetOneAdvanceEachAndThePaceHolds`, which is skipped, not passed, when the fork has fewer than five recent holders |
 | C9 | `test_reserve_aRepeatBorrowerLeavesOneDayOfFirstAdvances`, `test_reserve_isZeroWhenThePaceIsZero` |
 | C10 | `test_plainTransferIsRefused`, `test_topUp_ownerOnlyAndCounted` |
 | C11 | `test_repay_worksWhilePaused`, `test_repay_aWalletWithNoNameCanPay`, `test_theRealRegistryReplacedByBrokenCodeCannotBlockRepayment`, `test_aDeadRegistryCannotBlockRepaymentOrMarking`, `invariant_repaymentNeverFailsAndOpenTermsNeverMove` |
@@ -150,7 +150,7 @@ Test files are in `packages/contracts/test`. Every test passes at the time of wr
 | C13 | `test_markMissed_onlyAfterGraceAndOnlyOnce`, `testFuzz_markingMissedNeedsTheGraceToHavePassed`, `test_markMissedMany_marksOnlyTheOverdueOnes` |
 | C14 | `test_owner_hasNoWayToEditARecord`, `testFuzz_aStrangerCanOnlySettleNeverSpoil`, and `test_theContractAnswersToExactlyTheseFunctions`, which fails if any function is added |
 | C15 | `test_borrow_reenteringDuringThePayoutGetsNothingExtra` and `test_repay_reenteringOnTheRefundFails`: the wallet calls back from inside the payment, and the tests read the exact reason the call back was refused and check that the books were already updated when the BNB arrived. `test_borrow_failsCleanlyWhenTheBorrowerRefusesBnb`, `test_repay_aPayerThatRefusesItsChangeFailsOnlyItsOwnCall`, `test_withdraw_anOwnerThatRefusesBnbFailsCleanly`, `test_borrow_aBorrowerThatBurnsGasOnlyFailsItsOwnCall` |
-| C16 | `NameCredit.owner.t.sol`, all 23 tests. "Nothing else" is `test_theContractAnswersToExactlyTheseFunctions`. The lapse is `test_settings_lapseAWeekAfterTheDelay` |
+| C16 | `NameCredit.owner.t.sol`, all 24 tests. "Nothing else" is `test_theContractAnswersToExactlyTheseFunctions`. The lapse is `test_settings_lapseAWeekAfterTheDelay` |
 | C17 | `test_withdraw_cannotReachMoneyThatIsLentOut`, `test_ownership_movesInTwoStepsAndCannotBeRenounced`, `test_theContractAnswersToExactlyTheseFunctions`. That the contract has no proxy and no delegatecall is by reading the source |
 | C18 | `test_pass_skipsThePaceOnceAndOnlyOnce`, `test_pass_unknownExpiredOrRevokedIsRefused`, `test_pass_doesNotWaiveAnyOtherRule`, `test_pass_doesNotSkipTheCoolingOff`, `test_pass_isRefusedAboveTheFirstStepAndStaysUnused` |
 | C19 | By reading the source: no `string` or `bytes` in storage or in any event. `invariant_everyAdvanceIsCountedOnce` checks that the counters agree with each other |
@@ -161,7 +161,7 @@ What these tests do not cover: a transaction signed by a real Agentic Wallet, Bi
 
 ### Would the tests notice if a rule were broken?
 
-Passing tests prove little if they would also pass against a broken contract. `security/mutation.mjs` breaks the contract on purpose, one rule at a time, 51 ways, and runs the tests against each broken copy. The saved run is `security/outputs/mutation.txt`: all 51 were noticed. It covers the unit, fuzz and invariant tests, not the fork tests or the simulation. One thing it cannot show: the 64 byte limit on a name is a second guard behind the 128 byte limit on the registry's reply, so removing it alone changes nothing a test can see.
+Passing tests prove little if they would also pass against a broken contract. `security/mutation.mjs` breaks the contract on purpose, one rule at a time, 52 ways, and runs the tests against each broken copy. The saved run is `security/outputs/mutation.txt`: all 52 were noticed. It covers the unit, fuzz and invariant tests, not the fork tests or the simulation. One thing it cannot show: the 64 byte limit on a name is a second guard behind the 128 byte limit on the registry's reply, so removing it alone changes nothing a test can see.
 
 ### The same rules, attacked on a live network
 
@@ -182,7 +182,7 @@ The tests above run inside the test tool. The scripts in `packages/contracts/sec
 | C9 | After a day: a repeat borrower asks when the pool is one wei short of the advance plus the newcomers' reserve | `PoolEmpty` |
 | C10 | BNB sent with a plain transfer, and BNB sent to a function that does not exist | `DirectTransfer`, and a bare revert |
 | C13 | Marking an advance missed before its grace ends (from outside, and from inside its own payout), marking it twice, and marking 201 wallets in one call | `NotOverdue`, `AlreadyMarked`, `BatchTooLarge` |
-| C15 | Calling back into `borrow` and `repay` from inside the payout, and into `borrow` from inside the refund of an overpayment. The advance or repayment itself goes through; the call back is what must fail, and the debt must already be on the books when the BNB arrives | `ReentrancyGuardReentrantCall` |
+| C15 | Calling back into `borrow` and `repay` from inside the payout, and into `borrow` from inside the refund of an overpayment. The advance or repayment itself goes through; the call back is what must fail, and the books must already be right when the BNB arrives: the debt recorded for a payout, cleared for a refund | `ReentrancyGuardReentrantCall` |
 | C16 | A stranger calls each of the twelve owner functions. Anyone tries to apply settings when none are scheduled, and before the delay has passed | `OwnableUnauthorizedAccount`, `NothingScheduled`, `TooSoon` |
 | C18 | The same pass used twice, a code that was never issued, and a repeat borrower trying to spend a newcomer's pass | `BadPass`, `BadPass`, `PassNotNeeded` |
 
@@ -199,7 +199,7 @@ What the live run cannot do that the tests can: land a transaction on an exact s
 - **People who simply do not repay.** That is the experiment. The pool is the owner's money and the most it can lose is all of it. The repayment rate is published as it is.
 - **Patient ladder climbing.** A borrower can repay each advance with its own money, wait out each term, and default once at the cap. The loss per person is the cap, and it takes four full terms to get there: 12 days at the planned term of 3 days. The owner could shorten the term to as little as 1 hour, after the public delay, which would shorten that wait to 4 hours. The release pace applies to first advances only, so a group that climbs together can default together; what limits them is the pool, the day of first advances held back for newcomers, and the fact that each of them had to enter through a paced first advance.
 - **The registry's keys.** Two keys can issue names in the registry: its owner and its signer. Whoever controls either can give a name to any address that has none. This contract trusts them in the same way every Agent ID application does. They cannot move or remove a name that has been given.
-- **A stolen owner key.** The thief can take the pool, issue passes that skip the pace, and set the four parameters to their worst allowed values, which moves every wallet's limit inside the fixed bounds. They cannot take anything from borrowers, change anyone's step or history, or stop anyone repaying.
+- **A stolen owner key.** The thief can take the pool, issue passes that skip the pace, and set the four parameters to their worst allowed values, which moves every wallet's limit inside the fixed bounds. They cannot take anything from borrowers, edit anyone's step or history, or stop anyone repaying.
 - **A pass code seen in the open.** A code is visible in a pending transaction, and another Agent ID holder at the first step could use it first. The cost is one first advance going to a different holder. A holder above the first step cannot use it at all.
 - **Copycat websites.** A page that imitates ours can show an instruction with a different address. The defence is on the holder's side: the wallet's preview shows the real destination, and our skill tells agents to refuse any address but the published one.
 - **BNB's price.** Amounts are in BNB. A borrower repays the BNB figure they received, whatever it is worth in dollars on the day.

@@ -67,9 +67,9 @@ flowchart TD
 |---|---|---|
 | BNB Smart Chain mainnet | Agent ID registry (not ours) | `0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F` |
 | BNB Smart Chain mainnet | NameCredit | not deployed yet |
-| BNB Smart Chain testnet | NameCredit | [`0xEa15E229636752Eb2Af77cC0bBc58F236f676291`](https://testnet.bscscan.com/address/0xEa15E229636752Eb2Af77cC0bBc58F236f676291), [verified source](https://repo.sourcify.dev/97/0xEa15E229636752Eb2Af77cC0bBc58F236f676291) |
-| BNB Smart Chain testnet | Stand-in Agent ID registry | [`0x71760a997dd55a54fC709A67E276AA07e781eC50`](https://testnet.bscscan.com/address/0x71760a997dd55a54fC709A67E276AA07e781eC50), [verified source](https://repo.sourcify.dev/97/0x71760a997dd55a54fC709A67E276AA07e781eC50) |
-| BNB Smart Chain testnet | Attack runner | [`0x353cd4471a9a1A8Ff9CcaF94DE7d60A4AAe012eb`](https://testnet.bscscan.com/address/0x353cd4471a9a1A8Ff9CcaF94DE7d60A4AAe012eb), [verified source](https://repo.sourcify.dev/97/0x353cd4471a9a1A8Ff9CcaF94DE7d60A4AAe012eb) |
+| BNB Smart Chain testnet | NameCredit | [`0x31bed8A1f6C762ADF1F7208aFEaee828B1bF7726`](https://testnet.bscscan.com/address/0x31bed8A1f6C762ADF1F7208aFEaee828B1bF7726), [verified source](https://repo.sourcify.dev/97/0x31bed8A1f6C762ADF1F7208aFEaee828B1bF7726) |
+| BNB Smart Chain testnet | Stand-in Agent ID registry | [`0x0921b8D3d052515612DAc3F0013F9bb51a86B0c6`](https://testnet.bscscan.com/address/0x0921b8D3d052515612DAc3F0013F9bb51a86B0c6), [verified source](https://repo.sourcify.dev/97/0x0921b8D3d052515612DAc3F0013F9bb51a86B0c6) |
+| BNB Smart Chain testnet | Attack runner | [`0x21F2277F1b0aA3430dBD7f5e1236d9F2529fBD14`](https://testnet.bscscan.com/address/0x21F2277F1b0aA3430dBD7f5e1236d9F2529fBD14), [verified source](https://repo.sourcify.dev/97/0x21F2277F1b0aA3430dBD7f5e1236d9F2529fBD14) |
 
 Agent ID exists on mainnet only. The testnet registry is a stand-in deployed from the real registry's verified source, with the same name lengths (3 to 20) and owned by a testnet-only wallet so that test names can be issued. The testnet pool runs with a 1 hour term and a pace of 24 a day, so that the attack scripts can exhaust the pace and reach a late payment in a day; the mainnet pool is planned with a 3 day term and a pace of 100 a day. The record of the testnet run is in `security/outputs/`.
 
@@ -86,7 +86,7 @@ Reads, all view calls on `NameCredit`:
 | `stepTally(uint8)` | advances, onTime, late, missed, lent, repaid | The proof number and the ladder table |
 | `dayTally(uint32)` | advances, onTime, late, missed | Repayment by the day the advance was made |
 | `borrowerCount()`, `borrowersPage(start, count)` | wallets in order of first advance | The daily sweep that marks overdue advances |
-| `settings()`, `pendingSettings()`, `pendingSettingsAt()` | the four settings and any scheduled change | The rules shown on the docs page |
+| `settings()`, `pendingSettings()`, `pendingSettingsAt()`, `SETTINGS_WINDOW()` | the four settings and any scheduled change | The rules shown on the docs page. A scheduled change can be applied from `pendingSettingsAt` until `SETTINGS_WINDOW` (7 days) later. After that it has lapsed: it still reads as pending until the owner cancels or replaces it, but it can never arrive, and the site must say so |
 | `holdsAgentId(address)` | true or false | "You need an Agent ID" before any instruction is shown |
 
 Refusal codes from `quoteBorrow`: 0 none, 1 paused, 2 an advance is open, 3 too early, 4 no Agent ID, 5 pace exhausted, 6 pool empty.
@@ -111,8 +111,8 @@ Gas used is taken from real transactions on BNB testnet on 24 November 2026 (has
 
 | Action | Gas used | BNB | Dollars |
 |---|---|---|---|
-| First advance (with a pass, sent through a small wallet contract) | 160,283 | 0.0000080 | 0.0045 |
-| Repay | 58,956 | 0.0000029 | 0.0016 |
+| First advance (with a pass, sent through a small wallet contract) | 160,282 | 0.0000080 | 0.0045 |
+| Repay | 58,944 | 0.0000029 | 0.0016 |
 | Deploy | 3,376,974 | 0.00017 | 0.094 |
 | Mark missed | about 45,000 | 0.0000023 | 0.0013 |
 
