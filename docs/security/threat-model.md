@@ -155,9 +155,9 @@ Test files are in `packages/contracts/test`. Every test passes at the time of wr
 | C18 | `test_pass_skipsThePaceOnceAndOnlyOnce`, `test_pass_unknownExpiredOrRevokedIsRefused`, `test_pass_doesNotWaiveAnyOtherRule`, `test_pass_doesNotSkipTheCoolingOff`, `test_pass_isRefusedAboveTheFirstStepAndStaysUnused` |
 | C19 | By reading the source: no `string` or `bytes` in storage or in any event. `invariant_everyAdvanceIsCountedOnce` checks that the counters agree with each other |
 | C20 | Not provable yet: the website does not exist. It becomes a check on the site when it is built |
-| C21 | Not provable yet: nothing is on mainnet. `script/Check.s.sol` is the check, with no key needed. The deploy, the check, the owner's top-up and a real holder's borrow and repayment were rehearsed together on a private fork of mainnet, and the deploy script's refusals were shown by dry runs there |
+| C21 | `script/Check.s.sol`, with no key needed. Run against mainnet straight after the deployment of 24 November 2026: the real registry, the recorded owner, the four settings as planned. Output saved in `security/outputs/mainnet-2026-11-24.txt`, with the comparison that shows the mainnet code is the testnet code apart from the registry address. The deploy script's refusals were shown by dry runs on a fork of mainnet |
 
-What these tests do not cover: a transaction signed by a real Agentic Wallet, Binance's own preview and risk check, and how real people behave. Those need the mainnet deployment.
+What these tests do not cover: a transaction signed by a real Agentic Wallet, Binance's own preview and risk check, and how real people behave. Those need real use of the mainnet deployment, which at the time of writing holds no BNB and has had no borrower.
 
 ### Would the tests notice if a rule were broken?
 

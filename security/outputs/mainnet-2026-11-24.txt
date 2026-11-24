@@ -1,0 +1,38 @@
+NameCredit on BNB Smart Chain mainnet (chain 56). Deployed 24 November 2026.
+
+  NameCredit          0xc0337932e0Cd049aFa990A9A470c059586B2d9AE
+  explorer            https://bscscan.com/address/0xc0337932e0Cd049aFa990A9A470c059586B2d9AE
+  verified source     https://repo.sourcify.dev/56/0xc0337932e0Cd049aFa990A9A470c059586B2d9AE  (Sourcify, exact match)
+  deploy transaction  0xa0fac2024a5ad85829e7e49e16379802279389c0a54089f5e571ce3ff1521991
+  block               135,449,026
+  gas used            3,376,976 at 0.05 gwei, 0.000168849 BNB
+  deployed by         0xf3ad49055Eb25bEB2510f10DE50b892C60305Ad6, a wallet used only for this. It has no role in the contract.
+  owner               0x96E854aBDdc5C618ca843956d1303017b586aB75
+  registry it reads   0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F, the real Agent ID registry
+  settings            first advance 0.0003 BNB, cap 0.0048 BNB, term 3 days, pace 100 a day
+
+CHECK, from packages/contracts, no key needed:
+  forge script script/Check.s.sol --rpc-url https://bsc-rpc.publicnode.com
+Output on 24 November 2026, straight after the deploy:
+  chain id 56
+  NameCredit 0xc0337932e0Cd049aFa990A9A470c059586B2d9AE
+  code size in bytes 14809
+  registry it reads 0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F
+  owner 0x96E854aBDdc5C618ca843956d1303017b586aB75
+  first advance wei 300000000000000
+  cap wei 4800000000000000
+  term seconds 259200
+  pace per day 100
+  new advances paused false
+  a settings change is scheduled false
+  pool balance wei 0
+  CHECKED: the real Agent ID registry, the recorded owner, and the four settings as planned.
+
+SAME CODE AS THE CONTRACT ATTACKED ON TESTNET
+The code at this address is 14,809 bytes and is byte for byte the code at the testnet deployment
+0x31bed8A1f6C762ADF1F7208aFEaee828B1bF7726, once the registry address each one reads (it appears twice in
+each) is blanked out. The source Sourcify holds for this address is identical to src/NameCredit.sol and
+src/interfaces/IAgentIdRegistry.sol in this repo.
+
+WHAT HAS NOT HAPPENED YET, at the time of writing
+The pool holds no BNB. Nobody has borrowed. No Binance Agentic Wallet has called the contract.
