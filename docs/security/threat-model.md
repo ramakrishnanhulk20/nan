@@ -174,7 +174,7 @@ The tests above run inside the test tool. The scripts in `packages/contracts/sec
 | C16 | A stranger calls each of the eleven owner functions. Anyone tries to apply settings when none are scheduled, and before the delay has passed |
 | C18 | The same pass used twice, and a code that was never issued |
 
-Run on a local copy of the chain on 23 November 2026: 37 of 37 refused. The run on BNB testnet itself is recorded in `security/outputs/` when it is made.
+Run on BNB testnet on 24 November 2026: the 34 attacks that need no waiting were all refused, in 44 transactions that all succeeded. The record, with every transaction hash, is `security/outputs/testnet-2026-11-24.txt`, and the runner's source is verified so anyone can read its results from the chain. The 3 attacks after the grace need a day to pass and are added to that file when they run. On a local copy of the chain, with the clock moved forward, all 37 were refused.
 
 ## What this does not defend against
 

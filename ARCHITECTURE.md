@@ -67,7 +67,11 @@ flowchart TD
 |---|---|---|
 | BNB Smart Chain mainnet | Agent ID registry (not ours) | `0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F` |
 | BNB Smart Chain mainnet | NameCredit | not deployed yet |
-| BNB Smart Chain testnet | NameCredit and a stand-in registry | not deployed yet |
+| BNB Smart Chain testnet | NameCredit | [`0x593EFd791758130B41FA9BA1eF3DCB2bC6CC0Eb9`](https://testnet.bscscan.com/address/0x593EFd791758130B41FA9BA1eF3DCB2bC6CC0Eb9), [verified source](https://repo.sourcify.dev/97/0x593EFd791758130B41FA9BA1eF3DCB2bC6CC0Eb9) |
+| BNB Smart Chain testnet | Stand-in Agent ID registry | [`0x7aB1fEfb78706e77354a3c579815DC26dBD1E9C5`](https://testnet.bscscan.com/address/0x7aB1fEfb78706e77354a3c579815DC26dBD1E9C5), [verified source](https://repo.sourcify.dev/97/0x7aB1fEfb78706e77354a3c579815DC26dBD1E9C5) |
+| BNB Smart Chain testnet | Attack runner | [`0xBFfEf6fD3a051fbAB2Ba76F786FCBF2cE0cFA8Fc`](https://testnet.bscscan.com/address/0xBFfEf6fD3a051fbAB2Ba76F786FCBF2cE0cFA8Fc), [verified source](https://repo.sourcify.dev/97/0xBFfEf6fD3a051fbAB2Ba76F786FCBF2cE0cFA8Fc) |
+
+Agent ID exists on mainnet only. The testnet registry is a stand-in deployed from the real registry's verified source, owned by a testnet-only wallet so that test names can be issued. The testnet pool runs with a 1 hour term and a pace of 24 a day, so that the attack scripts can exhaust the pace and reach a late payment in a day; the mainnet pool is planned with a 3 day term and a pace of 100 a day. The record of the testnet run is in `security/outputs/`.
 
 ## The interface the site and the agent skill use
 
