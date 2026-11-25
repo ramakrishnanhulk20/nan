@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { isAddress } from "viem";
 import type { WalletView } from "@/lib/wallet";
 import { bnb, countdown } from "@/lib/format";
@@ -19,7 +19,7 @@ function when(unix: number): string {
   return new Date(unix * 1000).toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
-function Slip({ instruction, still }: { instruction: Instruction; still: boolean }) {
+function Slip({ instruction }: { instruction: Instruction }) {
   const [copied, setCopied] = useState(false);
   useEffect(() => setCopied(false), [instruction.text]);
 
@@ -35,9 +35,9 @@ function Slip({ instruction, still }: { instruction: Instruction; still: boolean
   return (
     <motion.div
       key={instruction.kind + instruction.data}
-      initial={still ? false : { opacity: 0, y: 28, rotate: -1.2 }}
+      initial={{ opacity: 0, y: 28, rotate: -1.2 }}
       animate={{ opacity: 1, y: 0, rotate: 0 }}
-      exit={still ? undefined : { opacity: 0, y: -16 }}
+      exit={{ opacity: 0, y: -16 }}
       transition={{ duration: 0.7, ease: EASE }}
       className="relative border border-paper/40 bg-ink"
     >
@@ -87,7 +87,6 @@ export function Borrow() {
   const [load, setLoad] = useState<Load>({ state: "idle" });
   const [pass, setPass] = useState("");
   const [now, setNow] = useState(0);
-  const still = useReducedMotion() ?? false;
   const address = typed.trim();
 
   useEffect(() => {
@@ -189,7 +188,7 @@ export function Borrow() {
       }}
     >
       <motion.div
-        initial={still ? false : { opacity: 0, y: 24 }}
+        initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-15%" }}
         transition={{ duration: 0.9, ease: EASE }}
@@ -292,13 +291,13 @@ export function Borrow() {
         <div className="min-w-0 md:sticky md:top-10 md:self-start">
           <AnimatePresence mode="wait">
             {view?.instruction ? (
-              <Slip key={view.instruction.kind + view.instruction.data} instruction={view.instruction} still={still} />
+              <Slip key={view.instruction.kind + view.instruction.data} instruction={view.instruction} />
             ) : (
               <motion.div
                 key="empty"
-                initial={still ? false : { opacity: 0 }}
+                initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                exit={still ? undefined : { opacity: 0 }}
+                exit={{ opacity: 0 }}
                 className="grid min-h-72 place-items-center border border-dashed border-paper/25 p-8 text-center text-dim"
               >
                 The slip to paste appears here when the contract says this wallet can borrow, or has something to repay.

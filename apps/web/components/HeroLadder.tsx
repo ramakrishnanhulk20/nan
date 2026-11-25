@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import type { PoolSnapshot } from "@/lib/pool";
 import { bnb, days, nameFrom } from "@/lib/format";
 import { ladderOf, statusOf, usePool } from "@/lib/usePool";
+import { useStill } from "./MotionPreferences";
 import { Facts, LiveRow, NameBox, SiteHeader, StatusLine } from "./Parts";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -26,23 +27,23 @@ function Ladder({ pool, still }: { pool: PoolSnapshot | null; still: boolean }) 
   const height = (i: number) => unit * 2 ** i;
   const centre = (i: number) => LEFT + i * (BAR + GAP) + BAR / 2;
 
-  const [at, setAt] = useState<{ step: number; phase: Phase }>(() =>
-    still ? { step: count - 1, phase: "top" } : { step: 0, phase: "borrow" },
-  );
+  const [loop, setLoop] = useState<{ step: number; phase: Phase }>({ step: 0, phase: "borrow" });
+  // Reduced motion shows the finished ladder and never starts the loop. The loop state stays put so the first render matches the server.
+  const at: { step: number; phase: Phase } = still ? { step: count - 1, phase: "top" } : loop;
 
   useEffect(() => {
     if (still || !pool) return;
     const timer = setTimeout(() => {
-      setAt(({ step, phase }) => {
+      setLoop(({ step, phase }) => {
         if (phase === "borrow") return { step, phase: "hold" };
         if (phase === "hold") return { step, phase: "repay" };
         if (phase === "repay") return step === count - 1 ? { step, phase: "top" } : { step, phase: "rise" };
         if (phase === "rise") return { step: step + 1, phase: "borrow" };
         return { step: 0, phase: "borrow" };
       });
-    }, LASTS[at.phase]);
+    }, LASTS[loop.phase]);
     return () => clearTimeout(timer);
-  }, [at, still, pool, count]);
+  }, [loop, still, pool, count]);
 
   const standing = at.phase === "rise" ? Math.min(at.step + 1, count - 1) : at.step;
   const fx = centre(standing);
@@ -211,12 +212,15 @@ function Ladder({ pool, still }: { pool: PoolSnapshot | null; still: boolean }) 
 export function HeroLadder({ initial }: { initial: PoolSnapshot | null }) {
   const { pool, failed, now } = usePool(initial);
   const [typed, setTyped] = useState("");
-  const still = useReducedMotion() ?? false;
+  const still = useStill();
   const first = pool ? bnb(pool.firstAdvanceWei) : null;
   const name = nameFrom(typed);
 
-  const rise = (delay: number) =>
-    still ? {} : { initial: { opacity: 0, y: 24 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.9, delay, ease: EASE } };
+  const rise = (delay: number) => ({
+    initial: { opacity: 0, y: 24 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.9, delay, ease: EASE },
+  });
 
   return (
     <section

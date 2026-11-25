@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Big_Shoulders, Hanken_Grotesk, IBM_Plex_Mono } from "next/font/google";
+import { MotionPreferences } from "@/components/MotionPreferences";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import "./globals.css";
 
@@ -23,8 +24,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
       <body className="bg-ink text-paper">
-        <SmoothScroll />
-        {children}
+        <MotionPreferences>
+          <SmoothScroll />
+          {children}
+        </MotionPreferences>
       </body>
     </html>
   );
