@@ -9,12 +9,9 @@ import { Mark } from "./Mark";
 export function SiteHeader() {
   return (
     <header className="relative z-20 flex items-center justify-between px-5 pt-5 md:px-10 md:pt-8">
-      <a href="/lab" className="group flex items-center gap-3" aria-label="Nan, lab menu">
+      <a href="/" className="group flex items-center gap-3" aria-label="Nan, home">
         <Mark className="h-11 w-11 text-paper transition-transform duration-500 ease-[var(--ease-poster)] group-hover:-translate-y-0.5" />
         <span className="font-display text-xl font-black uppercase tracking-[0.08em]">Nan</span>
-        <span className="font-tamil text-base text-paper/70" lang="ta">
-          நான்
-        </span>
       </a>
       <nav className="flex items-center gap-5 font-mono text-[11px] uppercase tracking-[0.16em] text-paper/80 md:gap-8 md:text-xs">
         <a className="draw pb-1 hover:text-paper" href={`https://bscscan.com/address/${nameCreditAddress}`} target="_blank" rel="noreferrer">

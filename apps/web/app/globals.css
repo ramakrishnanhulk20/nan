@@ -13,23 +13,8 @@
   --font-display: var(--font-big-shoulders), "Arial Narrow", sans-serif;
   --font-sans: var(--font-hanken), system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
-  --font-tamil: var(--font-tamil-serif), serif;
 
   --ease-poster: cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* The title's largest size, and the share of the screen's width it has to fit in: the whole row on a
-   phone, the left column on a desktop. */
-:root {
-  --title-max: 46vw;
-  --title-room: 90;
-}
-
-@media (min-width: 768px) {
-  :root {
-    --title-max: 31vw;
-    --title-room: 60;
-  }
 }
 
 html {
@@ -77,22 +62,9 @@ body {
   100% { transform: translate3d(0, 0, 0); }
 }
 
-@keyframes drift {
-  from { transform: translate3d(-4%, 0, 0); }
-  to { transform: translate3d(4%, 0, 0); }
-}
-
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
-}
-
-.mist {
-  animation: drift 26s ease-in-out infinite alternate;
-}
-
-.mist-slow {
-  animation: drift 41s ease-in-out infinite alternate-reverse;
 }
 
 .live-dot {
@@ -114,8 +86,6 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .grain::after,
-  .mist,
-  .mist-slow,
   .live-dot {
     animation: none;
   }

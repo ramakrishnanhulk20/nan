@@ -1,12 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Big_Shoulders, Hanken_Grotesk, IBM_Plex_Mono, Noto_Serif_Tamil } from "next/font/google";
+import { Big_Shoulders, Hanken_Grotesk, IBM_Plex_Mono } from "next/font/google";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import "./globals.css";
 
 const display = Big_Shoulders({ subsets: ["latin"], variable: "--font-big-shoulders", display: "swap" });
 const sans = Hanken_Grotesk({ subsets: ["latin"], variable: "--font-hanken", display: "swap" });
 const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-plex-mono", display: "swap" });
-const tamil = Noto_Serif_Tamil({ subsets: ["tamil"], weight: ["600"], variable: "--font-tamil-serif", display: "swap" });
 
 export const metadata: Metadata = {
   title: "Nan. Credit on a name.",
@@ -22,7 +21,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable} ${tamil.variable}`}>
+    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
       <body className="bg-ink text-paper">
         <SmoothScroll />
         {children}

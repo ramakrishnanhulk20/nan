@@ -1,22 +1,26 @@
-import { Mark } from "@/components/Mark";
+import { HeroLadder } from "@/components/HeroLadder";
+import { initialPool } from "@/lib/initial";
 import { nameCreditAddress } from "@/lib/generated/nameCredit";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
   return (
-    <main className="grid min-h-[100svh] place-items-center px-6">
-      <div className="max-w-md text-center">
-        <Mark className="mx-auto h-14 w-14 text-paper" />
-        <h1 className="mt-6 font-display text-6xl font-black uppercase leading-none tracking-tight">Nan</h1>
-        <p className="mt-4 text-lg text-dim">Credit on a name. The site is being built; the contract is live.</p>
+    <main>
+      <HeroLadder initial={await initialPool()} />
+      <section id="borrow" className="border-t border-line bg-ink px-5 py-20 md:px-10">
+        <p className="max-w-xl text-lg leading-snug text-paper">
+          The borrow screen is being built. The contract is already live, and anyone can read it.
+        </p>
         <a
-          className="draw mt-6 inline-block pb-1 font-mono text-xs uppercase tracking-[0.16em] text-paper"
+          className="draw mt-4 inline-block pb-1 font-mono text-xs uppercase tracking-[0.16em] text-paper"
           href={`https://bscscan.com/address/${nameCreditAddress}`}
           target="_blank"
           rel="noreferrer"
         >
           See the contract on BNB Smart Chain
         </a>
-      </div>
+      </section>
     </main>
   );
 }

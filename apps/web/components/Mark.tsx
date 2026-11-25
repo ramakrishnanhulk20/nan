@@ -1,7 +1,4 @@
-/**
- * The mark: one figure standing on a line. It is the person in the hero's film still, and it is the
- * letter "i", which is what Nan means.
- */
+/** The mark: the figure that climbs the ladder, standing on its line. */
 export function Mark({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 44 44" className={className} aria-hidden="true">

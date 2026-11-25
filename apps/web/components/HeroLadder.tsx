@@ -61,7 +61,13 @@ function Ladder({ pool, still }: { pool: PoolSnapshot | null; still: boolean }) 
 
   return (
     <figure className="relative">
-      <svg viewBox="0 0 880 600" className="h-auto w-full" role="img" aria-label="A figure borrows, repays on time, and climbs steps that double in height.">
+      <svg
+        viewBox="0 0 880 600"
+        preserveAspectRatio="xMaxYMax meet"
+        className="h-auto w-full md:max-h-[50svh]"
+        role="img"
+        aria-label="A figure borrows, repays on time, and climbs steps that double in height."
+      >
         <defs>
           <linearGradient id="lit" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#ff4d1f" stopOpacity="0.5" />
@@ -78,7 +84,7 @@ function Ladder({ pool, still }: { pool: PoolSnapshot | null; still: boolean }) 
 
         <line x1="20" y1={BASE} x2="860" y2={BASE} stroke="#f2eee6" strokeOpacity="0.35" />
 
-        <g fontFamily="var(--font-mono)" fill="#979da6" fontSize="13" letterSpacing="1.6">
+        <g fontFamily="var(--font-mono)" fill="#979da6" fontSize="14" letterSpacing="1.6">
           <circle cx={VAULT.x} cy={VAULT.y} r={VAULT.r} fill="none" stroke="#f2eee6" strokeOpacity="0.45" />
           <circle cx={VAULT.x} cy={VAULT.y} r={VAULT.r - 9} fill="none" stroke="#f2eee6" strokeOpacity="0.16" strokeDasharray="3 6" />
           <text x={VAULT.x} y={VAULT.y - 4} textAnchor="middle">
@@ -106,10 +112,34 @@ function Ladder({ pool, still }: { pool: PoolSnapshot | null; still: boolean }) 
                 transition={{ duration: 0.6, ease: EASE }}
               />
               <rect x={x} y={BASE - h} width={BAR} height={h} fill="none" stroke="#f2eee6" strokeOpacity={i === standing ? 0.9 : 0.32} />
-              <text x={x + BAR / 2} y={BASE + 26} textAnchor="middle" fontFamily="var(--font-mono)" fontSize="12" letterSpacing="1.6" fill="#979da6">
+              {i > 0 ? (
+                <text
+                  x={x - GAP / 2}
+                  y={BASE - h - 12}
+                  textAnchor="middle"
+                  fontFamily="var(--font-display)"
+                  fontWeight="900"
+                  fontSize="26"
+                  fill={i <= standing ? "#ff4d1f" : "#f2eee6"}
+                  fillOpacity={i <= standing ? 1 : 0.28}
+                >
+                  ×2
+                </text>
+              ) : null}
+              <text
+                className="hidden md:block"
+                x={x + BAR / 2}
+                y={BASE + 26}
+                textAnchor="middle"
+                fontFamily="var(--font-mono)"
+                fontSize="12"
+                letterSpacing="1.6"
+                fill="#979da6"
+              >
                 STEP {i + 1}
               </text>
               <text
+                className="hidden md:block"
                 x={x + BAR / 2}
                 y={BASE + 48}
                 textAnchor="middle"
@@ -119,39 +149,52 @@ function Ladder({ pool, still }: { pool: PoolSnapshot | null; still: boolean }) 
               >
                 {amount(i) ?? ""}
               </text>
+              <text
+                className="md:hidden"
+                x={x + BAR / 2}
+                y={BASE + 40}
+                textAnchor="middle"
+                fontFamily="var(--font-mono)"
+                fontSize="25"
+                fill={i === standing ? "#f2eee6" : "#979da6"}
+              >
+                {amount(i) ?? ""}
+              </text>
             </g>
           );
         })}
 
         <motion.g initial={false} animate={{ x: fx, y: fy }} transition={{ type: "spring", stiffness: 90, damping: 14 }}>
-          <circle cx="0" cy="-44" r="7.5" fill="#f2eee6" />
-          <rect x="-4.6" y="-33" width="9.2" height="33" rx="3" fill="#f2eee6" />
-          {at.phase === "hold" ? (
-            <motion.circle
-              cx="0"
-              cy="-44"
-              r="17"
-              fill="none"
-              stroke="#9db2ff"
-              strokeWidth="2"
-              strokeLinecap="round"
-              transform="rotate(-90 0 -44)"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: LASTS.hold / 1000, ease: "linear" }}
-            />
-          ) : null}
+          <g transform="scale(1.4)">
+            <circle cx="0" cy="-44" r="7.5" fill="#f2eee6" />
+            <rect x="-4.6" y="-33" width="9.2" height="33" rx="3" fill="#f2eee6" />
+            {at.phase === "hold" ? (
+              <motion.circle
+                cx="0"
+                cy="-44"
+                r="16"
+                fill="none"
+                stroke="#9db2ff"
+                strokeWidth="2"
+                strokeLinecap="round"
+                transform="rotate(-90 0 -44)"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: LASTS.hold / 1000, ease: "linear" }}
+              />
+            ) : null}
+          </g>
         </motion.g>
 
         {pool && !still ? (
           <motion.circle
-            r="9"
+            r="11"
             fill="#ff4d1f"
             filter="url(#glow)"
             initial={false}
             animate={{
-              cx: coinAtFigure ? fx + 22 : VAULT.x,
-              cy: coinAtFigure ? fy - 44 : VAULT.y + VAULT.r + 16,
+              cx: coinAtFigure ? fx + 34 : VAULT.x,
+              cy: coinAtFigure ? fy - 62 : VAULT.y + VAULT.r + 16,
               opacity: at.phase === "rise" || at.phase === "top" ? 0 : 1,
             }}
             transition={{ duration: 0.95, ease: [0.65, 0, 0.35, 1] }}
@@ -177,7 +220,7 @@ export function HeroLadder({ initial }: { initial: PoolSnapshot | null }) {
 
   return (
     <section
-      className="grain relative isolate min-h-[100svh] overflow-hidden bg-night"
+      className="grain relative isolate flex min-h-[100svh] flex-col overflow-hidden bg-night md:h-[100svh] md:min-h-[780px]"
       style={{
         backgroundImage:
           "linear-gradient(rgb(242 238 230 / 0.035) 1px, transparent 1px), linear-gradient(90deg, rgb(242 238 230 / 0.035) 1px, transparent 1px)",
@@ -186,14 +229,14 @@ export function HeroLadder({ initial }: { initial: PoolSnapshot | null }) {
     >
       <SiteHeader />
 
-      <div className="relative z-10 px-5 pt-8 md:px-10 md:pt-10">
+      <div className="relative z-10 shrink-0 px-5 pt-8 md:px-10 md:pt-6">
         <motion.div {...rise(0.2)}>
           <StatusLine status={statusOf(pool, failed, now)} />
         </motion.div>
         <motion.h1
           {...rise(0.35)}
           className="mt-4 font-display font-black uppercase leading-[0.84] tracking-[-0.015em] text-paper"
-          style={{ fontSize: "clamp(2.7rem, 8.4vw, 8.4rem)" }}
+          style={{ fontSize: "clamp(2.7rem, min(8vw, 15svh), 8.4rem)" }}
         >
           Repay on time.
           <br />
@@ -201,11 +244,11 @@ export function HeroLadder({ initial }: { initial: PoolSnapshot | null }) {
         </motion.h1>
       </div>
 
-      <div className="relative z-10 grid items-end gap-x-10 gap-y-8 px-5 pb-6 pt-6 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:px-10 md:pt-2">
+      <div className="relative z-10 grid min-h-0 flex-1 items-end gap-x-10 gap-y-8 px-5 pb-6 pt-6 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:px-10 md:pt-2">
         <div className="order-2 md:order-1">
           <motion.p {...rise(0.5)} className="max-w-xl text-lg leading-snug text-paper md:text-xl">
-            Nan is Tamil for I. {name ? `${name}.ai` : "Your Agent ID name"} borrows a little BNB with nothing locked up. Each
-            repayment on time moves it one step up.
+            {name ? `${name}.ai` : "Your Agent ID name"} borrows a little BNB with nothing locked up. Each repayment on time
+            moves it one step up, and each step is twice the last.
           </motion.p>
           <motion.div {...rise(0.65)} className="mt-6 max-w-xl">
             <Facts pool={pool} />
@@ -220,7 +263,7 @@ export function HeroLadder({ initial }: { initial: PoolSnapshot | null }) {
         </motion.div>
       </div>
 
-      <motion.div {...rise(0.9)} className="relative z-10 px-5 pb-6 md:px-10 md:pb-8">
+      <motion.div {...rise(0.9)} className="relative z-10 shrink-0 px-5 pb-6 md:px-10">
         <LiveRow pool={pool} />
       </motion.div>
     </section>
