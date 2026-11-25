@@ -28,6 +28,8 @@ coverage/
 lcov.info
 .next/
 .next-verify/
+next-env.d.ts
+*.tsbuildinfo
 dist/
 
 # editor and OS

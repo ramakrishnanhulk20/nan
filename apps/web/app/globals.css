@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #06080b;
+  --color-night: #0b1118;
+  --color-paper: #f2eee6;
+  --color-dim: #979da6;
+  --color-line: rgb(242 238 230 / 0.16);
+  --color-accent: #ff4d1f;
+  --color-live: #7fd6c2;
+  --color-wait: #9db2ff;
+
+  --font-display: var(--font-big-shoulders), "Arial Narrow", sans-serif;
+  --font-sans: var(--font-hanken), system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-tamil: var(--font-tamil-serif), serif;
+
+  --ease-poster: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* The title's largest size, and the share of the screen's width it has to fit in: the whole row on a
+   phone, the left column on a desktop. */
+:root {
+  --title-max: 46vw;
+  --title-room: 90;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --title-max: 31vw;
+    --title-room: 60;
+  }
+}
+
+html {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-ink);
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+  }
+}
+
+/* Film grain. The tile is larger than the box and jumps between a few offsets, which reads as grain
+   and costs nothing per frame. */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: -100%;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.2;
+  mix-blend-mode: overlay;
+  animation: grain 0.9s steps(5) infinite;
+}
+
+@keyframes grain {
+  0% { transform: translate3d(0, 0, 0); }
+  20% { transform: translate3d(-3%, 2%, 0); }
+  40% { transform: translate3d(2%, -4%, 0); }
+  60% { transform: translate3d(-2%, 3%, 0); }
+  80% { transform: translate3d(4%, -1%, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+@keyframes drift {
+  from { transform: translate3d(-4%, 0, 0); }
+  to { transform: translate3d(4%, 0, 0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.mist {
+  animation: drift 26s ease-in-out infinite alternate;
+}
+
+.mist-slow {
+  animation: drift 41s ease-in-out infinite alternate-reverse;
+}
+
+.live-dot {
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+.draw {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-size: 0% 1px;
+  background-position: 0 100%;
+  transition: background-size 0.35s var(--ease-poster);
+}
+
+.draw:hover,
+.draw:focus-visible {
+  background-size: 100% 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grain::after,
+  .mist,
+  .mist-slow,
+  .live-dot {
+    animation: none;
+  }
+}
