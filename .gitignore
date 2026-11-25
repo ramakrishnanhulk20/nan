@@ -28,9 +28,14 @@ coverage/
 lcov.info
 .next/
 .next-verify/
+apps/web/.next-fork/
+apps/web/.source/
 next-env.d.ts
 *.tsbuildinfo
 dist/
+
+# a file next dev rewrites on every run
+apps/web/AGENTS.md
 
 # editor and OS
 .DS_Store

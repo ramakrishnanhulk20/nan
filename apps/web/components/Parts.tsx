@@ -14,6 +14,9 @@ export function SiteHeader() {
         <span className="font-display text-xl font-black uppercase tracking-[0.08em]">Nan</span>
       </a>
       <nav className="flex items-center gap-5 font-mono text-[11px] uppercase tracking-[0.16em] text-paper/80 md:gap-8 md:text-xs">
+        <a className="draw pb-1 hover:text-paper" href="/docs">
+          Docs
+        </a>
         <a className="draw pb-1 hover:text-paper" href={`https://bscscan.com/address/${nameCreditAddress}`} target="_blank" rel="noreferrer">
           Contract
         </a>

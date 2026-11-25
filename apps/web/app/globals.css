@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
 
 @theme {
   --color-ink: #06080b;
@@ -15,6 +17,40 @@
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 
   --ease-poster: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Fumadocs UI, dark only. These values sit after the preset imports so they win over the preset .dark block. */
+.dark {
+  --color-fd-background: #06080b;
+  --color-fd-foreground: #f2eee6;
+  --color-fd-muted: #0b1118;
+  --color-fd-muted-foreground: #979da6;
+  --color-fd-popover: #0b1118;
+  --color-fd-popover-foreground: #f2eee6;
+  --color-fd-card: #0b1118;
+  --color-fd-card-foreground: #f2eee6;
+  --color-fd-border: rgb(242 238 230 / 0.16);
+  --color-fd-primary: #ff4d1f;
+  --color-fd-primary-foreground: #06080b;
+  --color-fd-secondary: #0b1118;
+  --color-fd-secondary-foreground: #f2eee6;
+  --color-fd-accent: rgb(242 238 230 / 0.08);
+  --color-fd-accent-foreground: #f2eee6;
+  --color-fd-ring: #ff4d1f;
+  --color-fd-overlay: rgb(6 8 11 / 0.6);
+  --color-fd-info: #9db2ff;
+}
+
+/* The preset repaints the sidebar with a more specific selector, so it needs its own override. */
+.dark #nd-sidebar {
+  --color-fd-muted: #0b1118;
+  --color-fd-secondary: #0b1118;
+  --color-fd-muted-foreground: #979da6;
+}
+
+html > body[data-scroll-locked] {
+  margin-right: 0px !important;
+  --removed-body-scroll-bar-size: 0px !important;
 }
 
 html {
