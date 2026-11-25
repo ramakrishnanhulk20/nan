@@ -6,11 +6,35 @@ import { isAddress } from "viem";
 import type { WalletView } from "@/lib/wallet";
 import { bnb, countdown } from "@/lib/format";
 import { nameCreditAddress } from "@/lib/generated/nameCredit";
-import { borrowInstruction, borrowWithPassInstruction, isPassCode, repayInstruction, type Instruction } from "@/lib/instructions";
+import { borrowInstruction, borrowWithPassInstruction, isPassCode, repayInstruction, type Instruction, type Lang } from "@/lib/instructions";
 
 const POLL_MS = 15_000;
 const RETRY_MS = 3_000;
 const EASE = [0.16, 1, 0.3, 1] as const;
+const LANG_KEY = "nan-lang";
+
+const WORDS: Record<Lang, { copy: string; copied: string; borrowHint: string; repayHint: string; pasted: string; replyLabel: string; reply: string; replyCopy: string }> = {
+  en: {
+    copy: "Copy the text",
+    copied: "Copied",
+    borrowHint: "It only works from the wallet that holds the Agent ID.",
+    repayHint: "Any wallet may send this. It settles this one advance and nothing else.",
+    pasted: "Now paste it into Binance AI Pro and read the preview before you confirm.",
+    replyLabel: "If it only previews, reply",
+    reply: "Confirmed, execute call 1",
+    replyCopy: "Copy",
+  },
+  zh: {
+    copy: "复制文本",
+    copied: "已复制",
+    borrowHint: "只能从持有该 Agent ID 的钱包发起。",
+    repayHint: "任何钱包都可以发送。它只结清这一笔预支款。",
+    pasted: "现在粘贴到 Binance AI Pro，确认前先看预览。",
+    replyLabel: "如果只预览没有执行，回复",
+    reply: "已确认，执行调用 1",
+    replyCopy: "复制",
+  },
+};
 
 type View = { tone: "live" | "wait"; line: string; instruction: Instruction | null; takesPass?: boolean };
 type Load = { state: "idle" } | { state: "bad" } | { state: "loading" } | { state: "failed" } | { state: "ready"; wallet: WalletView; stale: boolean };
@@ -19,16 +43,56 @@ function when(unix: number): string {
   return new Date(unix * 1000).toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
-function Slip({ instruction }: { instruction: Instruction }) {
+function LangSwitch({ lang, onPick }: { lang: Lang; onPick: (next: Lang) => void }) {
+  const button = (value: Lang, label: string) => (
+    <button
+      type="button"
+      lang={value === "zh" ? "zh" : undefined}
+      aria-pressed={lang === value}
+      onClick={() => onPick(value)}
+      className={`border-b font-mono text-[11px] uppercase tracking-[0.16em] ${
+        lang === value ? "border-accent text-paper" : "border-transparent text-dim transition-colors duration-200 hover:text-paper"
+      }`}
+    >
+      {label}
+    </button>
+  );
+  return (
+    <div role="group" aria-label="Language of the text" className="flex items-center gap-4">
+      {button("en", "EN")}
+      {button("zh", "中文")}
+    </div>
+  );
+}
+
+function Slip({ instruction, lang, onPick }: { instruction: Instruction; lang: Lang; onPick: (next: Lang) => void }) {
   const [copied, setCopied] = useState(false);
-  useEffect(() => setCopied(false), [instruction.text]);
+  const [replyCopied, setReplyCopied] = useState(false);
+  const words = WORDS[lang];
+  const body = instruction.text[lang];
+  useEffect(() => setCopied(false), [body]);
+
+  useEffect(() => {
+    if (!replyCopied) return;
+    const timer = setTimeout(() => setReplyCopied(false), 2000);
+    return () => clearTimeout(timer);
+  }, [replyCopied]);
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(instruction.text);
+      await navigator.clipboard.writeText(body);
       setCopied(true);
     } catch {
       setCopied(false);
+    }
+  };
+
+  const copyReply = async () => {
+    try {
+      await navigator.clipboard.writeText(words.reply);
+      setReplyCopied(true);
+    } catch {
+      setReplyCopied(false);
     }
   };
 
@@ -43,10 +107,14 @@ function Slip({ instruction }: { instruction: Instruction }) {
     >
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-b border-dashed border-paper/30 px-5 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
         <span>{instruction.kind === "repay" ? "Repay slip" : "Borrow slip"}</span>
-        <span>Paste into Binance AI Pro</span>
+        <LangSwitch lang={lang} onPick={onPick} />
       </div>
-      <p data-slip="text" className="select-all wrap-anywhere px-5 py-5 font-mono text-[15px] leading-relaxed text-paper">
-        {instruction.text}
+      <p
+        data-slip="text"
+        lang={lang === "zh" ? "zh" : undefined}
+        className="select-all wrap-anywhere whitespace-pre-wrap px-5 py-5 font-mono text-[15px] leading-relaxed text-paper"
+      >
+        {body}
       </p>
       <dl className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-4 gap-y-2 border-t border-dashed border-paper/30 px-5 py-4 font-mono text-xs text-dim">
         <dt className="uppercase tracking-[0.14em]">To</dt>
@@ -56,6 +124,7 @@ function Slip({ instruction }: { instruction: Instruction }) {
         <dt className="uppercase tracking-[0.14em]">Value</dt>
         <dd data-slip="value" className="text-paper">
           {instruction.valueBnb} BNB
+          {instruction.kind === "repay" ? ` · ${instruction.valueWei} wei` : ""}
         </dd>
         <dt className="uppercase tracking-[0.14em]">Data</dt>
         <dd data-slip="data" className="break-all text-paper">
@@ -68,15 +137,29 @@ function Slip({ instruction }: { instruction: Instruction }) {
           onClick={copy}
           className="rounded-lg bg-accent px-5 py-3 font-display text-lg font-extrabold uppercase tracking-[0.04em] text-ink transition-transform duration-300 hover:-translate-y-0.5 active:translate-y-0"
         >
-          {copied ? "Copied" : "Copy the text"}
+          {copied ? words.copied : words.copy}
         </button>
-        <span className="text-sm text-dim" aria-live="polite">
-          {copied
-            ? "Now paste it into Binance AI Pro and read the preview before you confirm."
-            : instruction.kind === "repay"
-              ? "Any wallet may send this. It settles this one advance and nothing else."
-              : "It only works from the wallet that holds the Agent ID."}
+        <span data-slip="hint" lang={lang === "zh" ? "zh" : undefined} className="text-sm text-dim" aria-live="polite">
+          {copied ? words.pasted : instruction.kind === "repay" ? words.repayHint : words.borrowHint}
         </span>
+      </div>
+      <div className="border-t border-dashed border-paper/30 px-5 py-4">
+        <p lang={lang === "zh" ? "zh" : undefined} className="font-mono text-[11px] uppercase tracking-[0.14em] text-dim">
+          {words.replyLabel}
+        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <span data-slip="reply" lang={lang === "zh" ? "zh" : undefined} className="select-all font-mono text-sm text-paper">
+            {words.reply}
+          </span>
+          <button
+            type="button"
+            data-slip="reply-copy"
+            onClick={copyReply}
+            className="rounded-lg border border-line px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-paper transition-colors duration-200 hover:border-accent"
+          >
+            {replyCopied ? words.copied : words.replyCopy}
+          </button>
+        </div>
       </div>
     </motion.div>
   );
@@ -87,7 +170,29 @@ export function Borrow() {
   const [load, setLoad] = useState<Load>({ state: "idle" });
   const [pass, setPass] = useState("");
   const [now, setNow] = useState(0);
+  const [lang, setLang] = useState<Lang>("en");
   const address = typed.trim();
+
+  // The server renders English. After mount a saved choice wins, then the browser's own language.
+  useEffect(() => {
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem(LANG_KEY);
+    } catch {
+      // Storage can be blocked, for example in private browsing. The default then applies.
+    }
+    if (saved === "en" || saved === "zh") setLang(saved);
+    else if (navigator.language.toLowerCase().startsWith("zh")) setLang("zh");
+  }, []);
+
+  const pickLang = (next: Lang) => {
+    setLang(next);
+    try {
+      localStorage.setItem(LANG_KEY, next);
+    } catch {
+      // The choice then lasts for this visit only.
+    }
+  };
 
   useEffect(() => {
     const clock = setInterval(() => setNow(Date.now()), 1000);
@@ -155,7 +260,7 @@ export function Borrow() {
       return {
         tone: "live",
         line: `${who} can borrow ${bnb(wallet.amountWei, 18)} BNB now, with nothing locked up. It would fall due ${when(wallet.dueIfBorrowedNow)}.`,
-        instruction: borrowInstruction(),
+        instruction: borrowInstruction(wallet.address, wallet.name, wallet.amountWei),
       };
     }
     // The contract checks the pace before the pool, and a pass skips only the pace. Nothing is held back from a
@@ -168,7 +273,7 @@ export function Borrow() {
       return {
         tone: "wait",
         line: `Every first advance released so far is taken. The next one opens in ${countdown(wallet.nextSlotAt, now)}. A pass skips this wait.`,
-        instruction: isPassCode(pass) ? borrowWithPassInstruction(pass) : null,
+        instruction: isPassCode(pass) ? borrowWithPassInstruction(wallet.address, wallet.name, wallet.amountWei, pass) : null,
         takesPass: true,
       };
     }
@@ -291,7 +396,7 @@ export function Borrow() {
         <div className="min-w-0 md:sticky md:top-10 md:self-start">
           <AnimatePresence mode="wait">
             {view?.instruction ? (
-              <Slip key={view.instruction.kind + view.instruction.data} instruction={view.instruction} />
+              <Slip key={view.instruction.kind + view.instruction.data} instruction={view.instruction} lang={lang} onPick={pickLang} />
             ) : (
               <motion.div
                 key="empty"
