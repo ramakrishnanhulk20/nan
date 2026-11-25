@@ -111,9 +111,18 @@ Writes only the owner may make: `topUp()`, `withdraw(uint256)`, `pause()`, `unpa
 
 ## Gas
 
-Gas used is taken from real transactions on BNB testnet on 24 November 2026 (hashes in `security/outputs/`). The BNB and dollar columns price that gas at what mainnet charged on 23 November: 0.05 gwei, with BNB at 559.51 dollars.
+On mainnet, from the first real borrow and repay on 25 November 2026, sent by Binance AI Pro from an Agentic Wallet (`security/outputs/mainnet-first-use-2026-11-25.txt`). The fee is what those transactions actually paid; the dollar column prices it at 539.65 dollars per BNB, the price AI Pro showed that day.
 
-| Action | Gas used | BNB | Dollars |
+| Action on mainnet | Gas used | Fee paid in BNB | Dollars |
+|---|---|---|---|
+| First advance (plain borrow, first time this wallet borrows) | 262,573 | 0.0000250 | 0.013 |
+| Repay | 58,956 | 0.0000070 | 0.004 |
+
+These are the figures a holder pays. The testnet first advance below took a different path (a borrow with a pass, sent from a small wallet contract, against a stand-in registry), so the two are not comparable.
+
+On testnet, from real transactions on 24 November 2026 (hashes in `security/outputs/`), priced at what mainnet charged on 23 November: 0.05 gwei, with BNB at 559.51 dollars.
+
+| Action on testnet | Gas used | BNB | Dollars |
 |---|---|---|---|
 | First advance (with a pass, sent through a small wallet contract) | 160,282 | 0.0000080 | 0.0045 |
 | Repay | 58,944 | 0.0000029 | 0.0016 |

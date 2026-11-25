@@ -1,0 +1,44 @@
+NameCredit on BNB Smart Chain mainnet (chain 56). The first real use, 25 November 2026.
+Pool: 0xc0337932e0Cd049aFa990A9A470c059586B2d9AE
+Explorer: https://bscscan.com/tx/<hash>
+
+Who: the team's own Agent ID wallet, ramm.ai, 0xC75126992E4744a75665405e9b427710C0d23052, a Binance Agentic Wallet.
+It is a team wallet and is never counted as an outside user.
+How: the borrow and the repay texts were copied from the site's borrow screen and pasted into Binance AI Pro.
+AI Pro previewed each call, waited for a yes, and sent it. Nothing was signed outside the wallet.
+
+1. Top-up by the owner, 0x96E854aBDdc5C618ca843956d1303017b586aB75
+   tx 0xbdf68ab11b58a36096ce036611eebb7fdb608cd0737a553193a8ceacd6dc5aa2
+   block 135648785, 2026-11-25 11:42:58 UTC, success
+   value 0.005 BNB, input 0xdc29f1de (topUp())
+
+2. Borrow, sent by Binance AI Pro from ramm.ai's wallet
+   tx 0xa697fde3e2ba7de8a0eb6b1702769b02596b4e40745093ec655f6f758452ed47
+   block 135651059, 2026-11-25 12:00:01 UTC, success
+   value 0, input 0xe68d3569 (borrow())
+   gas 262573 at 0.095 gwei, fee 0.0000250 BNB
+   paid 0.0003 BNB to the wallet, due 2026-11-28 12:00:01 UTC
+
+   What AI Pro showed before the yes: from the wallet above, to the pool, data 0xe68d3569, value 0,
+   simulation success, one balance change of +0.0003 BNB to the wallet, no allowance changes,
+   no authority changes, no risk flagged. Its first execute reported that the preview had expired;
+   it previewed again with the same result and sent that preview.
+
+3. Repay, sent by Binance AI Pro from the same wallet
+   tx 0x775b30233c0dd2bbcd3bec2ff174cfc9b4dca4ce4064cb269b8da7a6bb0e4ec9
+   block 135651552, 2026-11-25 12:03:43 UTC, success
+   value 0.0003 BNB, input 0x9f7c73e9000000000000000000000000c75126992e4744a75665405e9b427710c0d23052 (repay(address) for the same wallet)
+   gas 58956 at 0.120 gwei, fee 0.0000070 BNB
+   repaid 3 minutes 42 seconds after borrowing, on time
+
+Read back from the chain after the repay (block 135651848):
+   standingOf(ramm.ai's wallet): step 1 (the second step), limit 0.0006 BNB, owed 0, on time 1, late 0,
+   may borrow again from 2026-11-28 12:00:01 UTC (the end of the first advance's term)
+   quoteBorrow(ramm.ai's wallet): TooEarly, next advance 0.0006 BNB
+   totals: people 1, lent 0.0003 BNB, repaid 0.0003 BNB, outstanding 0, topped up 0.005 BNB, withdrawn 0
+   stepTally(0): advances 1, on time 1, late 0, missed 0
+   pool balance 0.005 BNB
+
+Re-check with no key:
+   cast call 0xc0337932e0Cd049aFa990A9A470c059586B2d9AE "standingOf(address)((bytes32,uint8,uint256,uint256,uint256,uint256,bool,uint256,uint16,uint16))" 0xC75126992E4744a75665405e9b427710C0d23052 --rpc-url https://bsc-rpc.publicnode.com
+   cast call 0xc0337932e0Cd049aFa990A9A470c059586B2d9AE "totals()((uint64,uint128,uint128,uint128,uint128,uint128))" --rpc-url https://bsc-rpc.publicnode.com
