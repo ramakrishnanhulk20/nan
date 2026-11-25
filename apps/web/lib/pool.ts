@@ -1,4 +1,4 @@
-import { createPublicClient, http } from "viem";
+import { createPublicClient, fallback, http } from "viem";
 import { bsc } from "viem/chains";
 import { nameCreditAbi, nameCreditAddress } from "./generated/nameCredit";
 
@@ -21,12 +21,23 @@ export type PoolSnapshot = {
   readAt: number;
 };
 
-const client = createPublicClient({
+// Public nodes drop the odd request, so a read that gets no answer goes to the next node in the list.
+// Reads made together travel as one call, which also means they all describe the same block.
+const NODES = [
+  process.env.BSC_RPC_URL,
+  "https://bsc-rpc.publicnode.com",
+  "https://bsc-dataseed1.bnbchain.org",
+  "https://bsc-dataseed.defibit.io",
+  "https://bsc-dataseed.ninicoin.io",
+].filter((url, index, all): url is string => Boolean(url) && all.indexOf(url) === index);
+
+export const client = createPublicClient({
   chain: bsc,
-  transport: http(process.env.BSC_RPC_URL || "https://bsc-dataseed.bnbchain.org"),
+  transport: fallback(NODES.map((url) => http(url, { timeout: 6_000, retryCount: 1 }))),
+  batch: { multicall: true },
 });
 
-const contract = { address: nameCreditAddress, abi: nameCreditAbi } as const;
+export const contract = { address: nameCreditAddress, abi: nameCreditAbi } as const;
 
 // Every visitor's page asks for the same five reads. One answer is shared for a few seconds so a busy
 // page does not lean on a public node.
