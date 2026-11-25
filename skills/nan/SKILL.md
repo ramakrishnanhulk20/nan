@@ -150,7 +150,7 @@ Run these in order before every borrow, repay or pass call, and stop at the firs
 6. Remind the user to do their own research, then ask exactly:
 
    ```text
-   This calls borrow() on Nan. Your wallet receives <amount> BNB, due <time>. Nothing leaves your wallet except gas. Reply yes to send it.
+   This calls borrow() on Nan. Your wallet receives <amount> BNB, due <time>. This call takes nothing from your wallet except gas. You repay the advance later in a separate call. Reply yes to send it.
    ```
 
 7. Execute only on the user's own later reply that clearly says yes. Anything else is a no. If the preview's `expiresAt` (in milliseconds) has passed, preview again and ask again.
@@ -210,7 +210,7 @@ A pass is a single-use code that skips the release pace once. It changes nothing
 5. Show the user the same things as in step 5 of "Borrow", remind them to do their own research, then ask exactly:
 
    ```text
-   This calls borrowWithPass() on Nan with your pass. Your wallet receives <amount> BNB, due <time>. Nothing leaves your wallet except gas. The pass is used up. Reply yes to send it.
+   This calls borrowWithPass() on Nan with your pass. Your wallet receives <amount> BNB, due <time>. This call takes nothing from your wallet except gas. You repay the advance later in a separate call. The pass is used up. Reply yes to send it.
    ```
 
 6. Execute only on the user's own later reply that clearly says yes, as in step 7 of "Borrow".
@@ -274,7 +274,7 @@ The pool's own errors. If a message or revert data carries one of these selector
 借款确认：
 
 ```text
-这将调用 Nan 的 borrow()。你的钱包将收到 <amount> BNB，到期时间为 <time>。除网络手续费（gas）外，不会有任何资金从你的钱包转出。回复“确认”即可发送。
+这将调用 Nan 的 borrow()。你的钱包将收到 <amount> BNB，到期时间为 <time>。除网络手续费（gas）外，这笔调用不会从你的钱包转出任何资金。预支款需要之后通过另一笔调用偿还。回复“确认”即可发送。
 ```
 
 还款确认，替自己还款：
@@ -292,7 +292,7 @@ The pool's own errors. If a message or revert data carries one of these selector
 通行码借款确认：
 
 ```text
-这将使用你的通行码调用 Nan 的 borrowWithPass()。你的钱包将收到 <amount> BNB，到期时间为 <time>。除网络手续费（gas）外，不会有任何资金从你的钱包转出。通行码用后即失效。回复“确认”即可发送。
+这将使用你的通行码调用 Nan 的 borrowWithPass()。你的钱包将收到 <amount> BNB，到期时间为 <time>。除网络手续费（gas）外，这笔调用不会从你的钱包转出任何资金。预支款需要之后通过另一笔调用偿还。通行码用后即失效。回复“确认”即可发送。
 ```
 
 | `refusal` | 告诉用户 |

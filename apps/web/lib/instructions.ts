@@ -38,14 +38,14 @@ function advanceText(wallet: Address, name: string | null, amountWei: string, da
     en: slip(
       `Using my Agentic Wallet (${address}) on BSC (chainId 56), run the contract call below to borrow a BNB advance on Nan for ${who("en")}.`,
       "en",
-      `Call 1: ${fn} on Nan${withPass ? ", using my pass" : ""}. It sends my wallet ${amount} BNB that I repay later. Nothing leaves my wallet except gas.`,
+      `Call 1: ${fn} on Nan${withPass ? ", using my pass" : ""}. It sends my wallet an advance of ${amount} BNB. This call takes nothing from my wallet except gas. I repay the advance later in a separate call.`,
       "0",
       data,
     ),
     zh: slip(
       `使用我的 Agentic Wallet（${address}），在 BSC（chainId 56）上执行下面这笔合约调用，为 ${who("zh")} 在 Nan 借一笔 BNB 预支款。`,
       "zh",
-      `调用 1：Nan 的 ${fn}${withPass ? "，使用我的通行码" : ""}。它会向我的钱包转入 ${amount} BNB，之后由我还款。除 gas 费外，我的钱包不会转出任何资产。`,
+      `调用 1：Nan 的 ${fn}${withPass ? "，使用我的通行码" : ""}。它会向我的钱包转入 ${amount} BNB 预支款。这笔调用除 gas 费外不会从我的钱包转出任何资产。预支款之后由我通过另一笔调用偿还。`,
       "0",
       data,
     ),
