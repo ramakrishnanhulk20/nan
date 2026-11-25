@@ -3,6 +3,8 @@ import { bsc } from "viem/chains";
 import { nameCreditAbi, nameCreditAddress } from "./generated/nameCredit";
 
 /** Everything the first screen shows, read from the chain. Amounts are wei as strings so they survive JSON. */
+export type StepCount = { advances: number; onTime: number; late: number; missed: number };
+
 export type PoolSnapshot = {
   balanceWei: string;
   outstandingWei: string;
@@ -16,7 +18,11 @@ export type PoolSnapshot = {
   people: number;
   lentWei: string;
   repaidWei: string;
-  firstStep: { advances: number; onTime: number; late: number; missed: number };
+  firstStep: StepCount;
+  /** One entry per step of the ladder, from the first advance up to the cap. */
+  byStep: StepCount[];
+  graceSeconds: number;
+  coolingOffSeconds: number;
   block: number;
   readAt: number;
 };
@@ -39,20 +45,33 @@ export const client = createPublicClient({
 
 export const contract = { address: nameCreditAddress, abi: nameCreditAbi } as const;
 
-// Every visitor's page asks for the same five reads. One answer is shared for a few seconds so a busy
+// Every visitor's page asks for the same reads. One answer is shared for a few seconds so a busy
 // page does not lean on a public node.
 const SHARE_FOR_MS = 8_000;
 let shared: { at: number; value: Promise<PoolSnapshot> } | null = null;
 
 async function read(): Promise<PoolSnapshot> {
-  const [pool, totals, settings, firstStep, block] = await Promise.all([
+  const [pool, totals, settings, grace, coolingOff, block] = await Promise.all([
     client.readContract({ ...contract, functionName: "pool" }),
     client.readContract({ ...contract, functionName: "totals" }),
     client.readContract({ ...contract, functionName: "settings" }),
-    client.readContract({ ...contract, functionName: "stepTally", args: [0] }),
+    client.readContract({ ...contract, functionName: "GRACE" }),
+    client.readContract({ ...contract, functionName: "COOLING_OFF" }),
     client.getBlockNumber(),
   ]);
   const [firstAdvance, cap, term, pacePerDay] = settings;
+  // The contract doubles the limit per step until it reaches the cap, and never goes above step 15.
+  let steps = 1;
+  for (let amount = firstAdvance; amount < cap && steps < 16; amount *= 2n) steps++;
+  const tallies = await Promise.all(
+    Array.from({ length: steps }, (_, step) => client.readContract({ ...contract, functionName: "stepTally", args: [step] })),
+  );
+  const byStep = tallies.map((tally) => ({
+    advances: Number(tally.advances),
+    onTime: Number(tally.onTime),
+    late: Number(tally.late),
+    missed: Number(tally.missed),
+  }));
   return {
     balanceWei: pool.balance.toString(),
     outstandingWei: pool.outstanding.toString(),
@@ -66,12 +85,10 @@ async function read(): Promise<PoolSnapshot> {
     people: Number(totals.people),
     lentWei: totals.lent.toString(),
     repaidWei: totals.repaid.toString(),
-    firstStep: {
-      advances: Number(firstStep.advances),
-      onTime: Number(firstStep.onTime),
-      late: Number(firstStep.late),
-      missed: Number(firstStep.missed),
-    },
+    firstStep: byStep[0],
+    byStep,
+    graceSeconds: Number(grace),
+    coolingOffSeconds: Number(coolingOff),
     block: Number(block),
     readAt: Date.now(),
   };
