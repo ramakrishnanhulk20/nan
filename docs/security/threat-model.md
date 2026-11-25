@@ -188,7 +188,7 @@ The tests above run inside the test tool. The scripts in `packages/contracts/sec
 
 Controls that must succeed: a named wallet borrows with the plain call; the attacking wallet is served by the second pool once its registry answers honestly; a named wallet borrows right after the faster pace comes into force.
 
-Run on BNB testnet on 24 November 2026: 43 attacks, each refused with exactly the expected error, and 2 controls served, in 60 transactions that all succeeded. The record, with every transaction hash, is `security/outputs/testnet-2026-11-24.txt`, and the runner's source is verified so anyone can read its results from the chain. Eight more attacks and one control need a day to pass and are added to that file when they run. On a local copy of the chain, with the clock moved forward, all 51 attacks were refused as expected and all 3 controls were served.
+Run on BNB testnet on 24 November 2026: 43 attacks, each refused with exactly the expected error, and 2 controls served, in 60 transactions that all succeeded. The record, with every transaction hash, is `security/outputs/testnet-2026-11-24.txt`, and the runner's source is verified so anyone can read its results from the chain. On 25 November the eight attacks that need a day were run too: each was refused with exactly the expected error, and the control was served, in 12 more transactions that all succeeded. On a local copy of the chain, with the clock moved forward, all 51 attacks were refused as expected and all 3 controls were served.
 
 What the live run cannot do that the tests can: land a transaction on an exact second (the grace boundary is tested to the second in the unit tests), and wait seven days for scheduled settings to lapse.
 

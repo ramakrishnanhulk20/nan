@@ -1,4 +1,4 @@
-NameCredit on BNB testnet (chain 97). Run of 24 November 2026.
+NameCredit on BNB testnet (chain 97). Runs of 24 and 25 November 2026.
 Explorer: https://testnet.bscscan.com/address/<address> or /tx/<hash>
 Verified source: https://repo.sourcify.dev/97/<address>
 
@@ -68,16 +68,19 @@ REFUSED  [C2] the second read answers correctly, then floods -> NoAgentId
 REFUSED  [C2] the third read never answers -> NoAgentId
 REFUSED  [C2] the third read answers correctly, then floods -> NoAgentId
 SERVED   [control] the same wallet, once the registry answers honestly
-attacks tried 43
-attacks refused with the expected error 43
-controls that had to succeed 2
-controls that succeeded 2
-
-Still to run: security/Phase2.s.sol, 9 more entries that need a day to pass (a late repayment and its
-cooling-off, the newcomers' reserve, a pace change coming into force, a returning borrower).
-It can run after 2026-11-25 10:26:06 UTC, when the advance left open by the runner's wallet number
-6 is past its grace, and must run before 2026-12-01 21:26:24 UTC, when the settings
-scheduled in phase one lapse.
+REFUSED  [C13] mark the same advance missed twice -> AlreadyMarked
+REFUSED  [C3 C5] borrow again while a missed advance is unpaid -> AdvanceOpen
+REFUSED  [C5] borrow again during the cooling-off after a late repayment -> TooEarly
+REFUSED  [C5 C18] use a valid pass to skip the cooling-off -> TooEarly
+REFUSED  [C9] a repeat borrower takes the pool below the newcomers' reserve -> PoolEmpty
+SERVED   [control] a named wallet borrows right after a faster pace comes into force
+REFUSED  [C8] a second first advance in the block where a faster pace came into force -> PaceExhausted
+REFUSED  [C1] a returning borrower, once the registry stops answering -> NoAgentId
+REFUSED  [C1] a returning borrower whose name has changed -> NameMismatch
+attacks tried 51
+attacks refused with the expected error 51
+controls that had to succeed 3
+controls that succeeded 3
 
 PROVE-IT COMMAND, script/ProveIt.s.sol
 The figures below are printed by the script before it sends. The transactions further down are the
@@ -104,8 +107,8 @@ Read back from the chain after the run:
   the prove-it borrower: step 1, limit 0.0006 BNB, owed 0, repaid on time 1, late 0
   the refusal is in the log of the tryBorrow transaction: Asked(served = false, reason = 0xf947691f),
   and 0xf947691f is the selector of NoAgentId()
-  totals: 6 borrowers, 0.0018 BNB lent, 0.0006 BNB repaid, 0.0012 BNB outstanding, 0.02 BNB topped up, 0 BNB withdrawn
-  pool balance: 0.018800000000000001 BNB (one wei above the books: the wei forced in by the C7 check)
+  totals: 7 borrowers, 0.0021 BNB lent, 0.0009 BNB repaid, 0.0012 BNB outstanding, 0.02 BNB topped up, 0.011300000000000002 BNB withdrawn
+  pool balance: 0.007499999999999999 BNB (one wei above the books: the wei forced in by the C7 check)
 
 TRANSACTIONS
 Deploy: 2 transactions, 2 succeeded, 5417634 gas
@@ -182,6 +185,20 @@ Prove-it: 7 transactions, 7 succeeded, 1939694 gas
   0x793e8be1e2715ca822eb37fe0508de17cd8f299f10d2c3355498e4168b8b55d5  block 144572754  borrowWithPass(bytes32)
   0xf05ec4ff9af9342bf58c1e0720deef2250ce31514ffef046dc4803f510019eb3  block 144572762  tryBorrow()
   0xd0dbf02c679e88cbcf0bf6fd5fff95903be845365badaba97c66033465fb052a  block 144572770  repay(address)
+
+Phase 2: 12 transactions, 12 succeeded, 2107346 gas
+  0xfb463074e65b06fab620a4563778aaa0ee93882eee32487b3df074617e0be766  block 144776326  addPasses(bytes32[],uint40)
+  0x80a5e6ee0d8a53fe0aaba17eb88f384fc3f5be74f87d2c7212354d0bacd09a7f  block 144776333  afterTheGrace(uint256,bytes32)
+  0x2b78aca1176ab4eb22301020a163cac6171fc93fa477d84235b8217cb12f0806  block 144776341  withdraw(uint256)
+  0x7eddd574d1e7007e9778a84fad5c95e2aa4035899a5190e57d865fb66d5a573d  block 144776349  intoTheReserve(uint256)
+  0x3af02993973296861e0a43d70134299c6be2965e37331d2c4500983d7ca1e074  block 144776357  burstAfterASettingsChange(uint256,uint256)
+  0x498551e63fed77cad98c8144e73b7c4da454270a8702b280b530c5d1254f4128  block 144776365  set(bytes4,uint8,bytes)
+  0x1b5ebe4187527999d7f5d141e9c39e5396cd90ea913a93303c2bc8bbf8d85e76  block 144776373  againstAHostileRegistry(address,string,string,bytes4)
+  0xb5b90cf8508c38c931348cd5de6cd083f3eea8e7348757b85875b1c7538d3a46  block 144776382  set(bytes4,uint8,bytes)
+  0xb710a6699f566534b0f47236637b909af391f85930f4171e0e1419c6332b9188  block 144776389  set(bytes4,uint8,bytes)
+  0xb7fae00466529733c544ce47c2d019cadf2d0b076ca181f4565ee178fdbc98eb  block 144776398  set(bytes4,uint8,bytes)
+  0xbc0adfc213019f11a83e8c6542849ab0229bd095b9c9e004587969f6ad4fb7a3  block 144776405  againstAHostileRegistry(address,string,string,bytes4)
+  0xbc2a4e38d71b9b480bc968f70348960362a468ef643c2735ecc3443be77b9888  block 144776413  sweep()
 
 What this run does not cover: a transaction signed by a real Binance Agentic Wallet, Binance's own
 preview and risk check, and the real Agent ID registry. Those exist on mainnet only. The registry here
