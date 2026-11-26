@@ -7,6 +7,7 @@ import type { WalletView } from "@/lib/wallet";
 import { bnb, countdown } from "@/lib/format";
 import { nameCreditAddress } from "@/lib/generated/nameCredit";
 import { borrowInstruction, borrowWithPassInstruction, isPassCode, repayInstruction, type Instruction, type Lang } from "@/lib/instructions";
+import { RegistryReads } from "./RegistryReads";
 
 const POLL_MS = 15_000;
 const RETRY_MS = 3_000;
@@ -165,7 +166,7 @@ function Slip({ instruction, lang, onPick }: { instruction: Instruction; lang: L
   );
 }
 
-export function Borrow() {
+export function Borrow({ registryPanel = false }: { registryPanel?: boolean } = {}) {
   const [typed, setTyped] = useState("");
   const [load, setLoad] = useState<Load>({ state: "idle" });
   const [pass, setPass] = useState("");
@@ -361,6 +362,7 @@ export function Borrow() {
                   {wallet.late}
                 </p>
               ) : null}
+              {registryPanel && wallet ? <RegistryReads wallet={wallet} /> : null}
               {view?.takesPass ? (
                 <div className="mt-4">
                   <label htmlFor="pass" className="font-mono text-[11px] uppercase tracking-[0.14em] text-dim">

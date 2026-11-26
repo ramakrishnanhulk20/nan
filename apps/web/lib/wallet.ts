@@ -1,8 +1,12 @@
-import { parseAbi, type Address } from "viem";
+import { keccak256, parseAbi, stringToBytes, type Address, type Hex } from "viem";
 import { registryAddress } from "./generated/nameCredit";
 import { client, contract } from "./pool";
 
-const registryAbi = parseAbi(["function handleOf(address) view returns (string)"]);
+const registryAbi = parseAbi([
+  "function handleOf(address) view returns (string)",
+  "function balanceOf(address) view returns (uint256)",
+  "function ownerOfHandle(string) view returns (address)",
+]);
 
 /** Why the contract would refuse an advance, in the order of its own `Refusal` enum. */
 export const REFUSALS = ["none", "paused", "open", "early", "noAgentId", "pace", "poolEmpty"] as const;
@@ -29,21 +33,36 @@ export type WalletView = {
   poolBalanceWei: string;
   chainTime: number;
   block: number;
+  /** The registry's own answers for this wallet, and the name hash the pool recorded at its first advance. */
+  registry: {
+    balance: string | null;
+    handle: string | null;
+    hasHandle: boolean;
+    owner: Address | null;
+    handleHash: Hex | null;
+    recordedHash: Hex;
+  };
 };
 
 // The registry allows only these characters. Anything else is not shown, so a name can never carry markup.
 const NAME = /^[a-z0-9]{1,64}$/;
 
 export async function readWallet(address: Address): Promise<WalletView> {
-  const [quote, standing, holds, handle, pool, block] = await Promise.all([
+  const [quote, standing, holds, handle, balance, pool, block] = await Promise.all([
     client.readContract({ ...contract, functionName: "quoteBorrow", args: [address] }),
     client.readContract({ ...contract, functionName: "standingOf", args: [address] }),
     client.readContract({ ...contract, functionName: "holdsAgentId", args: [address] }),
     client.readContract({ address: registryAddress, abi: registryAbi, functionName: "handleOf", args: [address] }).catch(() => ""),
+    client.readContract({ address: registryAddress, abi: registryAbi, functionName: "balanceOf", args: [address] }).catch(() => null),
     client.readContract({ ...contract, functionName: "pool" }),
     client.getBlock(),
   ]);
   const [refusal, amount, due] = quote;
+  // The registry is asked about the name exactly as it answered, so this read matches what the contract does.
+  const hasHandle = handle !== "";
+  const owner = hasHandle
+    ? await client.readContract({ address: registryAddress, abi: registryAbi, functionName: "ownerOfHandle", args: [handle] }).catch(() => null)
+    : null;
   return {
     address,
     holdsAgentId: holds,
@@ -64,5 +83,13 @@ export async function readWallet(address: Address): Promise<WalletView> {
     poolBalanceWei: pool.balance.toString(),
     chainTime: Number(block.timestamp),
     block: Number(block.number),
+    registry: {
+      balance: balance === null ? null : balance.toString(),
+      handle: hasHandle && NAME.test(handle) ? handle : null,
+      hasHandle,
+      owner,
+      handleHash: hasHandle ? keccak256(stringToBytes(handle)) : null,
+      recordedHash: standing.nameHash,
+    },
   };
 }
