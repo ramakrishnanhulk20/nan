@@ -23,7 +23,7 @@ flowchart LR
   C -->|three reads| R[(Agent ID registry<br/>SPACE ID HandleRegistry)]
   C -->|BNB advance| W
   O[Owner wallet] -->|top up, pause, settings| C
-  S[Static site] -->|view calls through public nodes| C
+  S[Website, reads only] -->|view calls through public nodes| C
   S -->|writes the instruction text| H
   K[Anyone] -->|repay for a borrower, mark missed| C
 ```

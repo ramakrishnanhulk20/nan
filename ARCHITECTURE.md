@@ -1,6 +1,6 @@
 # Architecture
 
-One contract, a static site and an instruction file for agents. No server, no database, no token.
+One contract, a website that only reads the chain, and an instruction file for agents. No database, no stored user data, no token. The website runs on Vercel and asks public BNB Smart Chain nodes for every number it shows.
 
 ## System overview
 
@@ -12,7 +12,7 @@ flowchart LR
   C -->|three reads| R[(Agent ID registry<br/>SPACE ID HandleRegistry)]
   C -->|BNB advance| W
   O[Owner wallet] -->|top up, pause, settings| C
-  S[Static site] -->|view calls through public nodes| C
+  S[Website, reads only] -->|view calls through public nodes| C
   S -->|writes the instruction text| H
   K[Anyone] -->|repay for a borrower, mark missed| C
 ```

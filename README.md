@@ -4,8 +4,7 @@
 
 Small BNB advances for any wallet that holds an Agent ID. Nothing locked up. Repay on time and the limit doubles.
 
-[Contract on BscScan](https://bscscan.com/address/0xc0337932e0Cd049aFa990A9A470c059586B2d9AE) • [Verified source on Sourcify](https://repo.sourcify.dev/56/0xc0337932e0Cd049aFa990A9A470c059586B2d9AE) • [Agent skill](skills/nan) • [Threat model](docs/security/threat-model.md)
-<!-- live app link goes here after the first deploy -->
+[Live app](https://nan-agent.vercel.app) • [Docs](https://nan-agent.vercel.app/docs) • [Contract on BscScan](https://bscscan.com/address/0xc0337932e0Cd049aFa990A9A470c059586B2d9AE) • [Verified source on Sourcify](https://repo.sourcify.dev/56/0xc0337932e0Cd049aFa990A9A470c059586B2d9AE) • [Agent skill](skills/nan) • [Threat model](docs/security/threat-model.md)
 
 ---
 
@@ -18,6 +17,7 @@ Small BNB advances for any wallet that holds an Agent ID. Nothing locked up. Rep
 | Pool, `NameCredit` | [`0xc0337932e0Cd049aFa990A9A470c059586B2d9AE`](https://bscscan.com/address/0xc0337932e0Cd049aFa990A9A470c059586B2d9AE) |
 | Agent ID registry it reads (SPACE ID's `HandleRegistry`, not ours) | [`0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F`](https://bscscan.com/address/0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F) |
 | Owner | [`0x96E854aBDdc5C618ca843956d1303017b586aB75`](https://bscscan.com/address/0x96E854aBDdc5C618ca843956d1303017b586aB75) |
+| Website | [nan-agent.vercel.app](https://nan-agent.vercel.app), reading this pool live |
 | Deployed | Block [135,449,026](https://bscscan.com/block/135449026), 24 November 2026 at 10:44:21 UTC, in transaction [`0xa0fac202...f1521991`](https://bscscan.com/tx/0xa0fac2024a5ad85829e7e49e16379802279389c0a54089f5e571ce3ff1521991) |
 
 The source is verified on Sourcify with an exact match. The code at this address is byte for byte the code attacked on testnet, apart from the registry address it reads ([the record](security/outputs/mainnet-2026-11-24.txt)).
@@ -170,7 +170,7 @@ Read back from the chain afterwards: the wallet is on step 1 (the second step) w
 
 ## Architecture
 
-One contract, a static site and an instruction file for agents. No server, no database, no token. More in [ARCHITECTURE.md](ARCHITECTURE.md).
+One contract, a website that only reads the chain, and an instruction file for agents. No database, no stored user data, no token. The website runs on Vercel and asks public BNB Smart Chain nodes for every number it shows. More in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ### System overview
 
@@ -182,7 +182,7 @@ flowchart LR
   C -->|three reads| R[(Agent ID registry<br/>SPACE ID HandleRegistry)]
   C -->|BNB advance| W
   O[Owner wallet] -->|top up, pause, settings| C
-  S[Static site] -->|view calls through public nodes| C
+  S[Website, reads only] -->|view calls through public nodes| C
   S -->|writes the instruction text| H
   K[Anyone] -->|repay for a borrower, mark missed| C
 ```
@@ -304,7 +304,7 @@ Steps 1 and 2 need only Foundry's `cast`. Steps 3 and 4 also need Foundry's `for
 
    `test_fork_holdersGetOneAdvanceEachAndThePaceHolds` is skipped, not passed, if the chain shows fewer than five recent holders.
 
-5. See the borrow screen. The site is not deployed yet, so run it locally (Quick start, step 3), open http://localhost:3000, and paste the wallet from step 2 into "Your Agentic Wallet address" under "How to borrow". The page reads that wallet's standing from the contract and says what it can do next. For a wallet that can borrow now, or has an advance to repay, it prints the line to paste into Binance AI Pro.
+5. See the borrow screen. Open https://nan-agent.vercel.app and paste the wallet from step 2 into "Your Agentic Wallet address" under "How to borrow". The page reads that wallet's standing from the contract and says what it can do next. For a wallet that can borrow now, or has an advance to repay, it prints the line to paste into Binance AI Pro.
 
 ---
 
@@ -547,6 +547,8 @@ docs                 the threat model and the mark
 | Identity | Agent ID, read from SPACE ID's `HandleRegistry` |
 | Source verification | Sourcify |
 | Site | Next.js 16.4.6, React 19.3.1, TypeScript 5.9.3, viem 2.58.6, Tailwind CSS 4.3.5, Motion 14.14.0, Lenis 1.3.28 |
+| Docs | Fumadocs 16.19.7 (core and UI), fumadocs-mdx 15.6.4, Mermaid 12.3.0 |
+| Hosting | Vercel |
 | Agent | The Binance Agentic Wallet skill and its `baw` command line |
 | Static analysis | slither 0.11.6, solhint 6.2.5 |
 
