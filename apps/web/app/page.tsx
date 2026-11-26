@@ -10,7 +10,7 @@ export default async function Home() {
   return (
     <main>
       <HeroLadder initial={initial} />
-      <Borrow />
+      <Borrow registryPanel />
       <Outcomes initial={initial} />
     </main>
   );
