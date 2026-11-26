@@ -1,0 +1,96 @@
+---
+title: Borrow
+description: Take an advance from your Agentic Wallet with one pasted slip, one preview and one yes.
+---
+
+You borrow from the wallet that holds your Agent ID, and your own agent sends the call. The website reads the contract and writes the text for your agent. It never asks for a signature, a QR scan or a seed phrase.
+
+## The three steps
+
+1. On the [home page](/#borrow), under "How to borrow", type your Agentic Wallet address. Not sure of it? Ask Binance AI Pro: `What is my Agentic Wallet address?`
+2. The page asks the contract about that wallet: whether it holds an Agent ID, its step, its limit, and whether it can borrow now. When it can, a borrow slip appears.
+3. In the Binance app, open Binance AI and switch to Pro. Paste the slip, read the preview, and confirm.
+
+The advance goes to the wallet that sends the call, and the contract checks in the same transaction that this wallet holds the Agent ID. So the slip only works from that wallet.
+
+## The slip
+
+This is the English borrow slip. The parts in angle brackets are yours: the page fills them in from what it read.
+
+```text title="Borrow slip"
+Using my Agentic Wallet (<your wallet>) on BSC (chainId 56), run the contract call below to borrow a BNB advance on Nan for <your name>.ai.
+Preview it for me first and only execute after I confirm. When it is done, send me the BscScan link.
+
+Call 1: borrow() on Nan. It sends my wallet an advance of 0.0003 BNB. This call takes nothing from my wallet except gas. I repay the advance later in a separate call.
+to: 0xc0337932e0Cd049aFa990A9A470c059586B2d9AE
+value: 0
+data: 0xe68d3569
+```
+
+- The amount is the advance at your step. 0.0003 BNB is the first step at the current settings.
+- If the page cannot read your name, the slip says "my Agent ID" instead.
+- `to` is the pool. `value: 0` means no BNB leaves your wallet with this call.
+- `data: 0xe68d3569` is `borrow()`. It is the same four bytes for everyone.
+
+The slip also comes in Chinese. Switch with EN and 中文 at the top of the slip.
+
+## What the preview shows
+
+On 25 November 2026 the team's own Agent ID wallet, ramm.ai, made the first real borrow by pasting this slip. Binance AI Pro showed this before it asked for a yes:
+
+| In the preview | What it showed |
+|---|---|
+| From | The holder's Agentic Wallet |
+| To | The pool. Its full address is under [Check the recipient](#check-the-recipient) |
+| Data | `0xe68d3569` |
+| Value | 0 |
+| Simulation | Success |
+| Balance change | One: +0.0003 BNB to the wallet |
+| Allowance and authority changes | None |
+| Risks | None flagged |
+
+Its first execute reported that the preview had expired. It previewed again, with the same result, and sent that one. The [full record](https://github.com/ramakrishnanhulk20/nan/blob/main/security/outputs/mainnet-first-use-2026-11-25.txt) has the transaction.
+
+No Nan call asks for an approval or takes BNB from your wallet on a borrow. If the preview shows either one, do not confirm.
+
+## If it only previews
+
+Sometimes Binance AI Pro shows the preview and stops there. Reply:
+
+```text
+Confirmed, execute call 1
+```
+
+The slip on the home page has this line under it, with its own copy button.
+
+## Developer Mode
+
+The [Nan skill](/docs/agent-skill) checks that Developer Mode is on and will not preview a call without it. If your agent says it is off, turn it on in the Binance App:
+
+1. Open the Agentic Wallet management page.
+2. Tap Settings, the icon at the top right.
+3. Turn on Developer Mode.
+4. Read and confirm the Risk Warning.
+5. Approve the signature request the App shows.
+
+Developer Mode can expire. If a later call says it is off, turn it on again the same way.
+
+## Check the recipient
+
+Before you confirm, check that the recipient in the preview is the pool:
+
+```text
+0xc0337932e0Cd049aFa990A9A470c059586B2d9AE
+```
+
+<Callout type="warn">
+A page that copies this one can write a slip with a different address. The preview shows where the call really goes, so check it there and not on the page that gave you the slip.
+</Callout>
+
+## After the yes
+
+The advance arrives in your wallet in the same transaction. At the current settings it is due 3 days later, and repaying up to one day after the due time still counts as on time. The exact due time is set by the block that takes the call.
+
+The network fee is the only cost, so the wallet needs a little BNB to send the call. The first real borrow used 262,573 gas and paid 0.0000250 BNB, about 1.3 US cents that day.
+
+If the page says the wallet cannot borrow, the reason is in the [FAQ](/docs/faq#why-was-my-borrow-refused). To pay it back, see [Repay](/docs/repay).

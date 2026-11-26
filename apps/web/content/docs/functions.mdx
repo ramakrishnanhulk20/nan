@@ -1,0 +1,76 @@
+---
+title: Function reference
+description: Every function and event of NameCredit, grouped by who can call it.
+---
+
+`NameCredit` in [`packages/contracts/src/NameCredit.sol`](https://github.com/ramakrishnanhulk20/nan/blob/main/packages/contracts/src/NameCredit.sol). Solidity 0.8.28, not upgradeable. Selectors for the calls a holder's agent makes are on [For agents and developers](/docs/for-agents).
+
+## Borrower
+
+| Function | What it does |
+|---|---|
+| `borrow()` | Takes an advance at the caller's step and sends it to the caller. Needs an Agent ID in the same transaction, no open advance, the wait over, a free slot in the release pace at the first step, and enough BNB in the pool |
+| `borrowWithPass(bytes32 code)` | The same at the first step, using a single-use pass to skip the release pace. Refused above the first step |
+
+## Anyone
+
+| Function | What it does |
+|---|---|
+| `repay(address borrower)` | Settles the borrower's open advance. Send at least the amount owed; anything above it comes back in the same transaction. Works while paused and never reads the registry |
+| `markMissed(address borrower)` | Records an open advance as missed once its due time plus one day has passed. Once per advance |
+| `markMissedMany(address[] list)` | The same for up to 200 wallets, skipping any that are not overdue |
+| `applySettings()` | Puts a scheduled settings change into force, from 12 hours after it was scheduled until 7 days after that |
+
+## Owner
+
+| Function | What it does |
+|---|---|
+| `topUp()` | Adds BNB to the pool |
+| `withdraw(uint256 amount)` | Sends BNB held by the pool to the owner |
+| `pause()`, `unpause()` | Stops or restarts new advances |
+| `scheduleSettings((uint96 firstAdvance, uint96 cap, uint32 term, uint32 pacePerDay))` | Schedules new settings, inside the bounds, after a 12 hour delay |
+| `cancelSettings()` | Drops a scheduled change |
+| `addPasses(bytes32[] passHashes, uint40 expires)` | Registers up to 200 pass hashes with an expiry |
+| `revokePass(bytes32 passHash)` | Cancels an unused pass |
+| `rescueToken(address token, uint256 amount)` | Sends a token sent here by mistake to the owner |
+| `transferOwnership(address newOwner)` | Names a new owner. The new owner calls `acceptOwnership()` to take over |
+| `renounceOwnership()` | Always refused |
+
+What each one cannot do is on [Owner powers](/docs/owner-powers).
+
+## Views
+
+| Function | Returns |
+|---|---|
+| `standingOf(address)` | A wallet's record: name hash, step, limit, owed, due, overdue at, missed, not before, on time, late |
+| `quoteBorrow(address)` | What `borrow` would do now: a refusal code (0 none, 1 paused, 2 advance open, 3 too early, 4 no Agent ID, 5 pace exhausted, 6 pool empty), the amount and the due time |
+| `holdsAgentId(address)` | True when the registry's three answers agree |
+| `pool()` | Balance, outstanding, first advances free now, when the next one opens, whether new advances are paused |
+| `totals()` | People, lent, repaid, outstanding, topped up, withdrawn |
+| `stepTally(uint8 step)` | Advances, on time, late, missed, lent and repaid at one step |
+| `dayTally(uint32 day)` | Advances, on time, late and missed, for the advances made on one UTC day (Unix time divided by 86,400) |
+| `borrowerCount()`, `borrowersPage(uint256 start, uint256 count)` | Every wallet that has borrowed, in order of its first advance, up to 500 a page |
+| `passExpiry(bytes32 passHash)` | When a pass expires. 0 when it is unknown, used or cancelled |
+| `settings()`, `pendingSettings()`, `pendingSettingsAt()` | The settings in force, a scheduled change, and when it can apply (0 when nothing is scheduled) |
+| `REGISTRY()`, `owner()`, `pendingOwner()`, `paused()` | The registry it reads, the owner, a named new owner, whether new advances are paused |
+| Constants | `GRACE` 1 day, `COOLING_OFF` 7 days, `SETTINGS_DELAY` 12 hours, `SETTINGS_WINDOW` 7 days, `MIN_FIRST_ADVANCE` 0.00005 BNB, `MAX_FIRST_ADVANCE` 0.002 BNB, `MAX_CAP` 0.02 BNB, `MIN_TERM` 1 hour, `MAX_TERM` 30 days, `MAX_PACE_PER_DAY` 10,000, `MAX_BATCH` 200, `MAX_PAGE` 500 |
+
+## Events
+
+| Event | When |
+|---|---|
+| `Borrowed(address indexed borrower, bytes32 indexed nameHash, uint8 step, uint256 amount, uint256 due, bool withPass)` | An advance was sent |
+| `Repaid(address indexed borrower, address indexed payer, uint8 step, uint256 amount, bool onTime)` | An advance was repaid in full |
+| `Missed(address indexed borrower, uint8 step, uint256 amount)` | An advance was marked missed |
+| `ToppedUp(address indexed from, uint256 amount)` | The owner added BNB |
+| `Withdrawn(address indexed to, uint256 amount)` | The owner took BNB out |
+| `SettingsScheduled((uint96,uint96,uint32,uint32) settings, uint256 effectiveAt)` | A settings change was scheduled |
+| `SettingsApplied((uint96,uint96,uint32,uint32) settings)` | Settings came into force, including at deployment |
+| `SettingsCancelled()` | A scheduled change was dropped |
+| `PassesAdded(uint256 count, uint256 expires)` | The owner registered passes |
+| `PassRevoked(bytes32 indexed passHash)` | The owner cancelled a pass |
+| `TokenRescued(address indexed token, uint256 amount)` | The owner recovered a token |
+| `Paused(address)`, `Unpaused(address)` | New advances stopped or restarted (OpenZeppelin) |
+| `OwnershipTransferStarted(address indexed, address indexed)`, `OwnershipTransferred(address indexed, address indexed)` | A handover was started or completed (OpenZeppelin) |
+
+The custom errors and their selectors are on [For agents and developers](/docs/for-agents#custom-errors).

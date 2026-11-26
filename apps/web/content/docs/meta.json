@@ -1,1 +1,22 @@
-{ "title": "Docs", "pages": ["index"] }
+{
+  "title": "Docs",
+  "pages": [
+    "index",
+    "---Use it---",
+    "borrow",
+    "repay",
+    "the-ladder",
+    "if-you-do-not-repay",
+    "passes",
+    "---Agents---",
+    "agent-skill",
+    "for-agents",
+    "---Contract---",
+    "contracts",
+    "owner-powers",
+    "functions",
+    "---Trust---",
+    "security",
+    "faq"
+  ]
+}

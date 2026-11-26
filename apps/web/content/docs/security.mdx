@@ -1,0 +1,105 @@
+---
+title: Security
+description: What was done to show the contract keeps its rules, what was not done, and what Nan does not defend against.
+---
+
+<Callout type="info">
+There has been no outside audit. Everything on this page was done by the team that wrote the contract.
+</Callout>
+
+## The threat model
+
+A threat model was written before any contract code. It sets 21 rules, C1 to C21, that define when the contract is done, and for each rule it names the test or check that shows the rule holds. It also says plainly where a rule rests on reading the source or cannot be tested yet. Read it in full: [`docs/security/threat-model.md`](https://github.com/ramakrishnanhulk20/nan/blob/main/docs/security/threat-model.md).
+
+The rules, in short:
+
+| Rule | What must always hold |
+|---|---|
+| C1 | A wallet gets an advance only if, in that same transaction, the registry says it holds a name, returns a well-formed name, and says that name belongs to that wallet |
+| C2 | A registry that fails, stalls or floods cannot change the contract's state, cost the caller more than a bounded amount, or lock a repayment |
+| C3 | A wallet has at most one open advance |
+| C4 | An advance is never more than the wallet's limit, and a step rises by one only through an on-time repayment in full |
+| C5 | A wallet that repaid late or was marked missed cannot borrow until it has paid in full and 7 days have passed, and then only at the first step |
+| C6 | One advance per term |
+| C7 | The pool's balance is never less than top-ups plus repayments, minus advances and withdrawals. Extra sent with a repayment leaves in the same transaction |
+| C8 | Without a pass, first advances never beat the release pace |
+| C9 | An advance above the first step never takes the pool below one day of first advances |
+| C10 | BNB comes in only through the owner's top-up and through `repay` |
+| C11 | `repay` works for any open advance, from any wallet, at any time, paused or not, whether or not the registry answers, whoever the owner is |
+| C12 | The amount and due time of an open advance never change |
+| C13 | An advance can be marked missed only after its due time plus grace, and only once |
+| C14 | A wallet's record changes only through its own borrow, a repayment of its advance, or a valid mark. The owner cannot edit it |
+| C15 | Every function that sends BNB updates the books first and sends last, under a reentrancy guard |
+| C16 | The owner's powers are exactly the list on [Owner powers](/docs/owner-powers), pinned by a test |
+| C17 | The contract cannot be upgraded, and sends BNB only to a borrower, a payer's extra, or the owner |
+| C18 | A pass skips the release pace once, at the first step only, and waives no other rule |
+| C19 | Events and views carry numbers, addresses and hashes only. No text from a caller is stored |
+| C20 | Every figure the website shows comes from a view call on the contract or the registry |
+| C21 | The mainnet registry, owner and settings are the ones published, and anyone can check them with three reads |
+
+## Tests and coverage
+
+Run on 25 November 2026 from a fresh clone, with Foundry 1.8.6:
+
+| Command | Result |
+|---|---|
+| `forge test` | 89 passed, 0 failed, 6 skipped (the fork tests, with no node given), 95 in all |
+| `BSC_RPC_URL=https://bsc-rpc.publicnode.com forge test` | 95 passed, 0 failed, 0 skipped |
+
+That includes 12 fuzz tests at 1,000 runs each, and 5 invariants checked over 200 runs of 100 random calls, 20,000 calls in all. The fork tests run against the real Agent ID registry on a local copy of mainnet.
+
+Coverage of `NameCredit.sol`, with the fork tests and the simulation left out:
+
+| Lines | Statements | Branches | Functions |
+|---|---|---|---|
+| 100% (250 of 250) | 99.71% (342 of 343) | 98.70% (76 of 77) | 100% (37 of 37) |
+
+The one branch no test reaches is a guard for a step above 15, which `repay` never lets a wallet reach. Static analysis found nothing high or medium: slither 0.11.6 reported 11 low and 5 informational findings, and solhint 6.2.5 reported no problems.
+
+## The mutation check
+
+Passing tests prove little if they would also pass against a broken contract. `node security/mutation.mjs` breaks the contract on purpose, one rule at a time, and runs the tests against each broken copy. The saved run of 24 November 2026 broke it 52 ways, and all 52 were caught ([`security/outputs/mutation.txt`](https://github.com/ramakrishnanhulk20/nan/blob/main/security/outputs/mutation.txt)). It leaves out the fork tests and the simulation.
+
+## Attacks on a live network
+
+51 attacks and 3 controls ran as real transactions against the testnet pool. Every attack was refused with exactly the error its rule names, and every control went through. The controls are calls that must succeed, placed next to the refusals so that a refusal cannot be an accident.
+
+The record stays on chain. Anyone can read it with no key:
+
+```bash
+git clone https://github.com/ramakrishnanhulk20/nan.git nan
+cd nan/packages/contracts
+forge soldeer install
+forge script security/Report.s.sol --rpc-url https://bsc-testnet-dataseed.bnbchain.org
+```
+
+The last four lines:
+
+```text
+  attacks tried 51
+  attacks refused with the expected error 51
+  controls that had to succeed 3
+  controls that succeeded 3
+```
+
+The script fails unless every attack was refused with the expected error and every control went through. How the attacks run is in [`security/README.md`](https://github.com/ramakrishnanhulk20/nan/blob/main/security/README.md), and the saved run with every transaction hash is [`security/outputs/testnet-2026-11-24.txt`](https://github.com/ramakrishnanhulk20/nan/blob/main/security/outputs/testnet-2026-11-24.txt).
+
+## Code reads
+
+Two independent code reads by AI reviewers that had not written the code, in three rounds. Two rules were reworded to match the code, and two checks were added to the contract before mainnet: a pass is refused above the first step, and scheduled settings lapse.
+
+## What the tests do not cover
+
+A transaction signed by a real Agentic Wallet, Binance's own preview and risk check, and how real people behave. The first real borrow and repay on mainnet, on 25 November 2026, is the first evidence of those ([the record](https://github.com/ramakrishnanhulk20/nan/blob/main/security/outputs/mainnet-first-use-2026-11-25.txt)).
+
+## What Nan does not defend against
+
+- One person with many verified Binance accounts holds many names and can take one first advance with each. The first step is sized as an acceptable loss per name, and the release pace limits the loss per day.
+- First advances go to whoever calls first. A script that watches for the next slot, one every 864 seconds at 100 a day, can take each one as it opens. The reserve protects newcomers from repeat borrowers, not from a queue of other newcomers.
+- Some people will simply not repay. The pool is the owner's money, and the most it can lose is all of it. The repayment rate is published as it is.
+- A patient borrower can repay each advance with its own money, wait out each term, and default once at the cap. The loss per person is the cap, and getting there takes four full terms, 12 days at a 3 day term.
+- Two keys can issue names in the Agent ID registry: its owner and its signer. Whoever controls either can give a name to any address that has none. Nan trusts them as every Agent ID application does. They cannot move or remove a name that has been given.
+- A thief with the owner key could take the pool, issue passes, and set the four settings to their worst allowed values. They could not take anything from borrowers, edit anyone's record, or stop anyone repaying.
+- A pass code is visible in a pending transaction, and another holder at the first step could use it first. The cost is one first advance going to a different holder.
+- A copycat website can show a slip with a different address. The defence is the wallet's preview, which shows the real recipient, and the skill, which refuses any address but the pool.
+- Amounts are in BNB. A borrower repays the BNB they received, whatever it is worth in dollars that day.

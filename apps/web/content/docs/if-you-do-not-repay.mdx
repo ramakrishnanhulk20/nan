@@ -1,0 +1,34 @@
+---
+title: If you do not repay
+description: Nothing is taken from your wallet. The record stays with your name.
+---
+
+Nan takes no collateral. What it relies on is the name: one Agent ID that stays with one wallet, and a public record of how that wallet repaid.
+
+## Repaid late
+
+An advance repaid after its due time plus one day of grace counts as late. The wallet goes back to the first step and can borrow again 7 days after it paid. Its count of late repayments goes up by one, and anyone can read it.
+
+## Never repaid
+
+Once the due time plus one day has passed, anyone can mark the advance missed with `markMissed(borrower)`, or with `markMissedMany(list)` for up to 200 wallets at once. Marking moves no BNB. It changes the pool's counters and the missed flag on that advance, and nothing else.
+
+Marked or not, the advance stays open, and a wallet with an open advance cannot borrow here. So the name cannot borrow again until it pays. If it does pay, the repayment counts as late: back to the first step, 7 days later. If it never pays, that wallet never borrows here again.
+
+## No clean name to start over with
+
+The Agent ID registry gives a wallet one name and never a second. The name can never move to another wallet and can never be destroyed: the registry refuses every transfer and approval, has no burn, and is not behind a proxy, so its code cannot be swapped. The pool records the name's hash at a wallet's first advance and refuses that wallet if the registry later shows a different name.
+
+So a missed payment stays with that name. Coming back as someone new is the usual way unsecured lending breaks, and the name is what closes it.
+
+What this does not stop: one person who controls many verified Binance accounts holds many names and can take one first advance with each. The first step is sized as an acceptable loss per name, and the [release pace](/docs/the-ladder#the-release-pace) limits the loss per day.
+
+## Nothing is taken from your wallet
+
+No collateral is locked, and the pool has no way to reach into a wallet. It never asks for a token approval. BNB comes in only when someone sends it with `repay`, or when the owner adds it with `topUp`.
+
+The contract sends BNB to exactly three kinds of address: a borrower (their advance), a payer (what they sent above the amount owed) and the owner (a withdrawal).
+
+## The record is public
+
+Anyone can read a wallet's step, its counts of on-time and late repayments, and whether its open advance was marked missed, with `standingOf`. The pool's outcomes for each step of the ladder and each day are public too. See [Function reference](/docs/functions#views).

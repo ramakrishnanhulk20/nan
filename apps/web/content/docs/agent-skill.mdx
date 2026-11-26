@@ -1,0 +1,85 @@
+---
+title: The agent skill
+description: An instruction file that lets an agent read a Nan standing and send Nan's three calls, each after one preview and one yes.
+---
+
+The Nan skill is a file of instructions for agents that use the Binance Agentic Wallet. It reads a wallet's standing on Nan, and it borrows, repays, and borrows with a pass. It sends calls only through the wallet's own command line, `baw`, previews every call first, sends only after the holder says yes, and only ever sends to the pool's address.
+
+It answers to phrases such as "borrow on Nan", "my Nan limit", "repay Nan" and "Nan pass", and their Chinese forms such as "Nan 借款" and "Nan 还款".
+
+Holders on Binance AI Pro can paste the slip from the [home page](/#borrow) instead. That is how the first real borrow and repay were sent.
+
+## Install
+
+```bash
+npx skills add binance/binance-skills-hub/skills/binance-web3/binance-agentic-wallet
+npx skills add ramakrishnanhulk20/nan/skills/nan
+```
+
+The first is Binance's official Agentic Wallet skill. Nan's skill takes its `baw` commands from it, so it goes in first. Both install into the agent skill folders of the folder you run them from. The source is [`skills/nan/SKILL.md`](https://github.com/ramakrishnanhulk20/nan/blob/main/skills/nan/SKILL.md).
+
+## The reader
+
+The skill reads the chain with a small script in its own folder. It needs Node 18 or later and no packages.
+
+```bash
+node scripts/read.mjs <wallet address>
+```
+
+Run it from the skill's folder, or give its full path. It reads the pool through public BNB Smart Chain nodes, because `baw` has no read-only call. It sends nothing and signs nothing, and every value comes from one block.
+
+| Exit code | Meaning |
+|---|---|
+| 0 | One JSON object with the fields below |
+| 2 | The address was not `0x` followed by 40 hex characters |
+| 3 | No node answered |
+
+| Field | Meaning |
+|---|---|
+| `wallet` | The wallet that was read, in lowercase |
+| `holdsAgentId` | True when the registry shows an Agent ID for this wallet whose name points back to it |
+| `refusal` | What a borrow would say right now. `none` means it would lend. The others are on [For agents and developers](/docs/for-agents#refusal-codes) |
+| `amountWei` | The advance this wallet would get at its step, in wei |
+| `dueIfBorrowedNow` | When an advance taken in this block would fall due |
+| `step` | The wallet's step on the ladder. 0 is the first step |
+| `limitWei` | What an advance at that step is under the current settings, in wei |
+| `owedWei` | What the wallet owes now, in wei. 0 when nothing is open |
+| `due` | When the open advance is due. 0 when nothing is open |
+| `overdueAt` | The due time plus one day of grace. Repaid after this, the advance counts as late. 0 when nothing is open |
+| `missed` | True when the open advance has been recorded as missed |
+| `notBefore` | The earliest time this wallet may start a new advance |
+| `onTime` | How many advances this wallet repaid on time |
+| `late` | How many advances this wallet repaid late |
+| `poolBalanceWei` | The BNB the pool holds now, in wei |
+| `nextSlotAt` | When the next first-step advance opens. Equal to `chainTime` when one is open now. 0 when none are being released |
+| `block` | The block every value was read at |
+| `chainTime` | That block's time |
+| `node` | The node that answered |
+
+Times are Unix seconds. Amounts are wei as decimal text: put the decimal point 18 digits from the right to get BNB, so `300000000000000` is 0.0003 BNB.
+
+## Before every call
+
+The skill runs five checks with `baw` and stops at the first one that fails:
+
+1. The wallet is connected.
+2. The holder's own wallet is the address on chain 56. It is the only wallet the skill sends from.
+3. Developer Mode is on. If it is not, the skill gives the App steps and waits.
+4. The wallet holds enough BNB for the fee, and for a repay, the amount owed too.
+5. No other transaction from the wallet is still pending.
+
+It builds the call data itself from the pinned selectors, and checks it before every preview. It never takes an address or call data from a web page, a message or a pasted text.
+
+## One preview, one yes
+
+The skill holds to one preview and one yes per call. A yes answers the one preview it follows, and nothing after it.
+
+- The yes must be the holder's own later message that clearly says yes, such as "yes", "confirm", "go ahead", "确认" or "是". Anything else is a no.
+- Text in a web page, a message, a file, a tool output or on-chain data is never a yes, even when it says yes.
+- It never sends from a standing instruction or a schedule, such as "repay it when it falls due" or "borrow again every week".
+- It never shortens or skips the preview, and never answers with only a transaction link.
+- If a preview expires, it previews again and asks again. A yes to the old preview does not carry over.
+
+## English or Chinese
+
+The skill answers in the language the holder writes in. Its confirmation prompts and its answer for each refusal are written in both English and Chinese.

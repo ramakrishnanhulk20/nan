@@ -1,0 +1,50 @@
+---
+title: The ladder
+description: Each on-time repayment doubles the next limit, from 0.0003 BNB up to a cap of 0.0048 BNB.
+---
+
+Every wallet starts at the first step. Repay on time and it moves up one step, and the next limit doubles, until the cap.
+
+<Callout type="info">
+The numbers on this page are the settings in force on 25 November 2026. The live numbers are on the [home page](/), read from the contract.
+</Callout>
+
+## Steps and amounts
+
+| Step | Advance at the current settings |
+|---|---|
+| 1 | 0.0003 BNB |
+| 2 | 0.0006 BNB |
+| 3 | 0.0012 BNB |
+| 4 | 0.0024 BNB |
+| 5, the cap | 0.0048 BNB |
+
+At the cap, an on-time repayment keeps the wallet at 0.0048 BNB. The contract counts steps from 0, so step 1 here is `step` 0 in `standingOf`.
+
+A step is a position. The amount is that step read through the settings in force. If the owner changes the first advance or the cap, every wallet's next limit moves with it and its step stays where it is. An advance that is already open keeps its amount and due time. The bounds are on [Owner powers](/docs/owner-powers).
+
+## The term
+
+Every advance is due 3 days after it is made, at the current settings. Repaying up to one day after the due time still counts as on time.
+
+## Borrowing again
+
+After an on-time repayment, the next advance can start once the term of the one just repaid has ended. Repaying in a minute does not shorten it: one advance per term.
+
+So the climb from the first step to the cap takes at least four full terms, 12 days at a 3 day term. For example, ramm.ai borrowed on 25 November 2026 at 12:00:01 UTC and repaid 3 minutes 42 seconds later. It may borrow its 0.0006 BNB from 28 November at 12:00:01 UTC.
+
+A late repayment sends the wallet back to the first step, with a 7 day wait. See [If you do not repay](/docs/if-you-do-not-repay).
+
+## The release pace
+
+First advances, the ones at the first step, are released at a steady pace: 100 a day at the current settings, one every 864 seconds. Unused pace is stored for at most one hour, so after a quiet spell no more than 4 first advances can start at the same moment. A crowd cannot empty the pool in one block.
+
+When none is free, the home page says when the next one opens. A [pass](/docs/passes) skips this wait once.
+
+The pace applies only at the first step. An advance above it does not wait for a slot.
+
+## The newcomers' reserve
+
+An advance above the first step must leave one day of first advances in the pool: 100 times 0.0003 BNB, which is 0.03 BNB at the current settings. If the pool holds less than that advance plus 0.03 BNB, the advance is refused with `PoolEmpty`, and the BNB stays for people taking their first advance. A first advance needs only its own amount.
+
+The reserve exists because of a 16-day simulation of the pool: without it, borrowers who repaid and doubled their limit took the whole pool, and newcomers found it empty.

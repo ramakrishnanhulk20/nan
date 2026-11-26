@@ -1,0 +1,36 @@
+---
+title: Passes
+description: A single-use code from the owner that skips the release pace once, at the first step only.
+---
+
+A pass is a secret code that the pool's owner gives to one person. It is `0x` followed by 64 hex characters. It lets a wallet at the first step take its first advance when every first advance released so far is taken, without waiting for the next slot.
+
+## What a pass does and does not do
+
+- It works only at the first step. Above it the pool refuses a pass with `PassNotNeeded`, because the [release pace](/docs/the-ladder#the-release-pace) only applies at the first step.
+- It skips the release pace and nothing else. The wallet still needs an Agent ID, no open advance, its wait over, and enough BNB in the pool.
+- It works once. A used pass is refused with `BadPass`.
+- A call that is refused does not use it up.
+- It stops working at its expiry time, or when the owner cancels it.
+
+A pass changes no amount and no record. The advance is the same first advance anyone else gets.
+
+## How to use one
+
+On the [home page](/#borrow), when the contract says every first advance released so far is taken, an "I have a pass" field appears. Paste the code there and the page writes a borrow slip for `borrowWithPass()`. Its value is 0, and its data is `0x5735ce7b` followed by the code's 64 hex characters, 74 characters in all.
+
+The page offers the pass only when the pool can cover the advance. With the [Nan skill](/docs/agent-skill), type the code in the conversation.
+
+## Keep it private until the call is sent
+
+<Callout type="warn">
+The code travels inside the transaction. While the transaction is pending, anyone watching can read it, and another Agent ID holder at the first step could try to use it first. Share it with nobody, paste it only into your own agent, and never repeat it in full after the call.
+</Callout>
+
+If that happens, the cost is one first advance going to a different holder. A holder above the first step cannot use the code at all.
+
+## Where passes come from
+
+Only the owner can issue passes. The owner makes the codes with `tools/passes.mjs` and registers only their hashes with `addPasses`, up to 200 per call, each batch with an expiry. The codes themselves never go on chain until they are used, so a code stays secret until then.
+
+The owner can cancel an unused pass with `revokePass`, and there is no limit on how many passes it can issue. Anyone can check a pass by its hash with `passExpiry`, which returns 0 when the pass is unknown, used or cancelled.

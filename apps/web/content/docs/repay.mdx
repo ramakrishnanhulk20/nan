@@ -1,0 +1,60 @@
+---
+title: Repay
+description: Pay back exactly what you received, from any wallet, with one slip and one yes.
+---
+
+You repay exactly what you received. There is no interest and no fee.
+
+## The repay slip
+
+When a wallet has an advance open, the [home page](/#borrow) writes a repay slip in place of the borrow slip. Type the wallet that borrowed. The parts in angle brackets are filled in from the contract.
+
+```text title="Repay slip"
+Using my Agentic Wallet (<borrower wallet>) on BSC (chainId 56), run the contract call below to repay an advance on Nan in full.
+Preview it for me first and only execute after I confirm. When it is done, send me the BscScan link.
+
+Call 1: repay() on Nan. It sends 0.0003 BNB from my wallet to the Nan pool and settles the advance of <borrower wallet>.
+to: 0xc0337932e0Cd049aFa990A9A470c059586B2d9AE
+value: 300000000000000 (wei, = 0.0003 BNB)
+data: 0x9f7c73e9000000000000000000000000<borrower wallet in lowercase, without its 0x>
+```
+
+- `value` is what the borrower owes, in wei, read from the contract. 1 BNB is 10^18 wei, so 300000000000000 wei is 0.0003 BNB.
+- `data` is `repay(address)` built for that borrower: the four bytes `0x9f7c73e9`, then 24 zeros, then the borrower's 40 hex characters in lowercase. 74 characters in all.
+
+The first real repay on mainnet, for ramm.ai's wallet `0xC75126992E4744a75665405e9b427710C0d23052`, sent 0.0003 BNB with this data:
+
+```text
+0x9f7c73e9000000000000000000000000c75126992e4744a75665405e9b427710c0d23052
+```
+
+Paste the slip into Binance AI Pro the same way as a [borrow](/docs/borrow), check that the recipient is the pool, and confirm. If it only previews, reply `Confirmed, execute call 1`.
+
+## On time or late
+
+An advance is due at the end of its term, 3 days at the current settings. One day of grace follows. A repayment counts as on time up to the due time plus that day.
+
+| When the repayment lands | It counts as | What happens next |
+|---|---|---|
+| By the due time plus one day | On time | The next limit doubles, up to the cap. The next advance can start once the term of this one has ended |
+| Later than that | Late | The wallet goes back to the first step and can borrow again 7 days after paying |
+
+An example from the chain: ramm.ai borrowed on 25 November 2026 at 12:00:01 UTC, due 28 November at 12:00:01 UTC. It repaid 3 minutes 42 seconds later, on time. Its limit rose to 0.0006 BNB, and it may borrow again from 28 November at 12:00:01 UTC, when the first term ends.
+
+The amount and due time of an advance are fixed when it is made. A later change of settings does not move them.
+
+## Anyone may repay for anyone
+
+`repay(borrower)` works from any wallet. The payment settles that borrower's advance and counts for that borrower, not for the payer.
+
+Send at least the amount owed. Anything above it comes back to the payer in the same transaction. Less than the amount owed is refused with `Underpaid`, and nothing changes.
+
+With the [Nan skill](/docs/agent-skill), type the other wallet in the conversation and ask to repay for it. The skill then says plainly that the BNB leaves your wallet and settles that wallet's advance, not yours.
+
+## Repaying always works
+
+Repaying works while new advances are paused, when the Agent ID registry does not answer, and whoever the owner is. It never reads the registry, so a wallet that no longer shows an Agent ID can still pay.
+
+## The fee
+
+The first real repayment used 58,956 gas and paid 0.0000070 BNB, about 0.4 US cents that day. The paying wallet needs the amount owed plus that fee.
