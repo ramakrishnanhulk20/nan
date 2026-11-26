@@ -40,7 +40,7 @@ type View = { tone: "live" | "wait"; line: string; instruction: Instruction | nu
 type Load = { state: "idle" } | { state: "bad" } | { state: "loading" } | { state: "failed" } | { state: "ready"; wallet: WalletView; stale: boolean };
 
 function when(unix: number): string {
-  return new Date(unix * 1000).toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  return new Date(unix * 1000).toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZoneName: "short" });
 }
 
 function LangSwitch({ lang, onPick }: { lang: Lang; onPick: (next: Lang) => void }) {
@@ -352,7 +352,7 @@ export function Borrow() {
                     <span>{view.line}</span>
                   </>
                 ) : (
-                  <span className="text-dim">It answers here as soon as there is an address above. Nothing is sent anywhere but the public chain.</span>
+                  <span className="text-dim">It answers here as soon as there is an address above. The page uses the address only to read the public chain, and asks for nothing else.</span>
                 )}
               </p>
               {wallet && wallet.holdsAgentId ? (
@@ -405,7 +405,12 @@ export function Borrow() {
                 exit={{ opacity: 0 }}
                 className="grid min-h-72 place-items-center border border-dashed border-paper/25 p-8 text-center text-dim"
               >
-                The slip to paste appears here when the contract says this wallet can borrow, or has something to repay.
+                <div>
+                  <p>The slip to paste appears here when the contract says this wallet can borrow, or has something to repay.</p>
+                  <a href="/docs/borrow" className="draw mt-4 inline-block pb-1 font-mono text-xs uppercase tracking-[0.16em] text-paper">
+                    See what the slip looks like
+                  </a>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

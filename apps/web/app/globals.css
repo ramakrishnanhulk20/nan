@@ -107,6 +107,17 @@ body {
   animation: pulse 1.8s ease-in-out infinite;
 }
 
+@keyframes rise {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* The hero entrance. It runs from the first paint with no script, so the server HTML is never a blank screen. */
+.rise {
+  animation: rise 0.9s var(--ease-poster) both;
+  animation-delay: var(--rise-delay, 0s);
+}
+
 .draw {
   background-image: linear-gradient(currentColor, currentColor);
   background-repeat: no-repeat;
@@ -122,7 +133,8 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .grain::after,
-  .live-dot {
+  .live-dot,
+  .rise {
     animation: none;
   }
 }

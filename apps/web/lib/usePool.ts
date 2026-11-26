@@ -49,7 +49,7 @@ export function statusOf(pool: PoolSnapshot | null, failed: boolean, now: number
   if (pool.paused) return { tone: "wait", text: "New advances are paused. Repayments still work." };
   if (BigInt(pool.balanceWei) < BigInt(pool.firstAdvanceWei)) return { tone: "wait", text: "The pool is empty. Not lending yet." };
   if (pool.slotsNow > 0) {
-    return { tone: "live", text: `Lending now. ${pool.slotsNow} first ${pool.slotsNow === 1 ? "advance" : "advances"} open.` };
+    return { tone: "live", text: `Lending now. ${pool.slotsNow} first ${pool.slotsNow === 1 ? "advance" : "advances"} open now, ${pool.pacePerDay} a day.` };
   }
   return { tone: "wait", text: `Next first advance opens in ${countdown(pool.nextSlotAt, now)}` };
 }

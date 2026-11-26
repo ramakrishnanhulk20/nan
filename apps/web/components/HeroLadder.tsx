@@ -216,11 +216,8 @@ export function HeroLadder({ initial }: { initial: PoolSnapshot | null }) {
   const first = pool ? bnb(pool.firstAdvanceWei) : null;
   const name = nameFrom(typed);
 
-  const rise = (delay: number) => ({
-    initial: { opacity: 0, y: 24 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.9, delay, ease: EASE },
-  });
+  // The entrance is a CSS animation, so the text shows on first paint before any script has loaded.
+  const rise = (delay: number) => ({ "--rise-delay": `${delay}s` }) as React.CSSProperties;
 
   return (
     <section
@@ -234,42 +231,41 @@ export function HeroLadder({ initial }: { initial: PoolSnapshot | null }) {
       <SiteHeader />
 
       <div className="relative z-10 shrink-0 px-5 pt-8 md:px-10 md:pt-6">
-        <motion.div {...rise(0.2)}>
+        <div className="rise" style={rise(0.2)}>
           <StatusLine status={statusOf(pool, failed, now)} />
-        </motion.div>
-        <motion.h1
-          {...rise(0.35)}
-          className="mt-4 font-display font-black uppercase leading-[0.84] tracking-[-0.015em] text-paper"
-          style={{ fontSize: "clamp(2.7rem, min(8vw, 15svh), 8.4rem)" }}
+        </div>
+        <h1
+          className="rise mt-4 font-display font-black uppercase leading-[0.84] tracking-[-0.015em] text-paper"
+          style={{ ...rise(0.35), fontSize: "clamp(2.7rem, min(8vw, 15svh), 8.4rem)" }}
         >
           Repay on time.
           <br />
           <span className="text-accent">Your limit doubles.</span>
-        </motion.h1>
+        </h1>
       </div>
 
       <div className="relative z-10 grid min-h-0 flex-1 items-end gap-x-10 gap-y-8 px-5 pb-6 pt-6 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:px-10 md:pt-2">
         <div className="order-2 md:order-1">
-          <motion.p {...rise(0.5)} className="max-w-xl text-lg leading-snug text-paper md:text-xl">
+          <p className="rise max-w-xl text-lg leading-snug text-paper md:text-xl" style={rise(0.5)}>
             {name ? `${name}.ai` : "Your Agent ID name"} borrows a little BNB with nothing locked up. Each repayment on time
             moves it one step up, and each step is twice the last.
-          </motion.p>
-          <motion.div {...rise(0.65)} className="mt-6 max-w-xl">
+          </p>
+          <div className="rise mt-6 max-w-xl" style={rise(0.65)}>
             <Facts pool={pool} />
             <div className="mt-5">
               <NameBox typed={typed} onTyped={setTyped} label="Your Agent ID name" first={first} />
             </div>
-          </motion.div>
+          </div>
         </div>
 
-        <motion.div {...rise(0.5)} className="order-1 md:order-2 md:ml-auto md:w-full md:max-w-[44rem]">
+        <div className="rise order-1 md:order-2 md:ml-auto md:w-full md:max-w-[44rem]" style={rise(0.5)}>
           <Ladder key={pool ? "live" : "waiting"} pool={pool} still={still} />
-        </motion.div>
+        </div>
       </div>
 
-      <motion.div {...rise(0.9)} className="relative z-10 shrink-0 px-5 pb-6 md:px-10">
+      <div className="rise relative z-10 shrink-0 px-5 pb-6 md:px-10" style={rise(0.9)}>
         <LiveRow pool={pool} />
-      </motion.div>
+      </div>
     </section>
   );
 }

@@ -190,6 +190,17 @@ function LateDrawing({ day, rules, geo }: DrawingProps) {
       <Figure fx={fx} fill={fill} geo={geo} />
       <Coin day={day} hand={hand} geo={geo} out={[0, 0.4]} back={[stop, stop + 0.3]} />
       <motion.circle cx={x(stop + c)} cy={ground - 26 * k} r={9 * k} fill="var(--color-accent)" style={{ opacity: endCoinOpacity }} />
+      <motion.text
+        x={x(stop + c) - 16 * k}
+        y={ground - 26 * k + 5 * k}
+        textAnchor="end"
+        className="font-mono"
+        fontSize={14 * k}
+        fill={WAIT}
+        style={{ opacity: endCoinOpacity }}
+      >
+        first step again
+      </motion.text>
     </>
   );
 }
@@ -351,6 +362,21 @@ function DayLabels({ rules }: { rules: Rules }) {
   );
 }
 
+function Legend({ className }: { className: string }) {
+  return (
+    <div className={`flex flex-wrap gap-x-6 gap-y-2 font-mono text-[11px] uppercase tracking-[0.14em] text-dim ${className}`}>
+      <span className="inline-flex items-center gap-2">
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+        The advance
+      </span>
+      <span className="inline-flex items-center gap-2">
+        <span className="h-3 w-3 shrink-0 rounded-full border border-paper/45" aria-hidden="true" />
+        The pool
+      </span>
+    </div>
+  );
+}
+
 function ClockRow({ day, rules }: { day: MotionValue<number>; rules: Rules }) {
   const whole = useTransform(day, (v) => Math.floor(v));
   const hint = useTransform(day, [0, 0.3], [1, 0]);
@@ -387,6 +413,7 @@ function ClockRow({ day, rules }: { day: MotionValue<number>; rules: Rules }) {
               </motion.p>
             </AnimatePresence>
           </div>
+          <Legend className="mt-4" />
         </div>
         <div className="self-end">
           <DayLabels rules={rules} />
@@ -450,6 +477,7 @@ function Stage({ pool }: { pool: PoolSnapshot }) {
       >
         <ClockRow day={day} rules={rules} />
         <div className="md:hidden">
+          <Legend className="mb-3" />
           <DayLabels rules={rules} />
         </div>
         {lanes.map((copy) => (
