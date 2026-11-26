@@ -8,7 +8,7 @@ One contract, a website that only reads the chain, and an instruction file for a
 flowchart LR
   H[Holder] -->|pastes one instruction| A[Their AI agent<br/>Binance AI Pro or baw]
   A -->|preview, then the holder says yes| W[Agentic Wallet<br/>holds the Agent ID]
-  W -->|borrow / repay| C[(NameCredit<br/>BNB Smart Chain)]
+  W -->|borrow / repay| C[(Nan pool<br/>NameCredit contract<br/>BNB Smart Chain)]
   C -->|three reads| R[(Agent ID registry<br/>SPACE ID HandleRegistry)]
   C -->|BNB advance| W
   O[Owner wallet] -->|top up, pause, settings| C
@@ -23,7 +23,7 @@ flowchart LR
 sequenceDiagram
   actor Holder
   participant Agent as AI agent
-  participant Credit as NameCredit
+  participant Credit as Nan pool (NameCredit)
   participant Registry as Agent ID registry
 
   Holder->>Agent: paste "borrow my starter advance"
