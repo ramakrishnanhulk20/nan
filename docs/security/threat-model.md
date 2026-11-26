@@ -116,7 +116,7 @@ What these two rest on: a record here is kept per wallet, so "cannot come back a
 
 **What leaves the contract is treated like input**
 - C19. Events and views expose numbers, addresses and hashes only. The contract stores and emits no text supplied by a caller.
-- C20. Every figure the website shows comes from a view call on this contract or the registry. The instruction text contains only the fixed contract address, a fixed function and an amount read from the contract.
+- C20. Every figure the website shows comes from a view call on this contract or the registry. The instruction text contains only the fixed contract address, call data encoded from the contract's own interface, an amount read from the contract, and the holder's own wallet and Agent ID name as the registry returns them (a name is shown only if it is lower-case letters and digits).
 
 **The deployment is the one that was published**
 - C21. At deployment, the mainnet contract's registry, owner and four settings are the ones stated in the README, and anyone can check that with three reads. Every later change of settings is a public event, and the README records each one that has been applied. On mainnet the deploy script takes the settings from its own source and not from the environment, refuses this project's testnet wallet as owner whether or not the environment names it, and needs the owner address typed twice.
@@ -154,10 +154,10 @@ Test files are in `packages/contracts/test`. Every test passes at the time of wr
 | C17 | `test_withdraw_cannotReachMoneyThatIsLentOut`, `test_ownership_movesInTwoStepsAndCannotBeRenounced`, `test_theContractAnswersToExactlyTheseFunctions`. That the contract has no proxy and no delegatecall is by reading the source |
 | C18 | `test_pass_skipsThePaceOnceAndOnlyOnce`, `test_pass_unknownExpiredOrRevokedIsRefused`, `test_pass_doesNotWaiveAnyOtherRule`, `test_pass_doesNotSkipTheCoolingOff`, `test_pass_isRefusedAboveTheFirstStepAndStaysUnused` |
 | C19 | By reading the source: no `string` or `bytes` in storage or in any event. `invariant_everyAdvanceIsCountedOnce` checks that the counters agree with each other |
-| C20 | Not provable yet: the website does not exist. It becomes a check on the site when it is built |
+| C20 | Holds on the live site: every figure comes from view calls in `apps/web/lib/pool.ts` and `apps/web/lib/wallet.ts`, and the slip is built in `apps/web/lib/instructions.ts` from the pool address, the compiled interface and amounts read from the contract. The team checks every slip against the contract's own encodings before each release |
 | C21 | `script/Check.s.sol`, with no key needed. Run against mainnet straight after the deployment of 24 November 2026: the real registry, the recorded owner, the four settings as planned. Output saved in `security/outputs/mainnet-2026-11-24.txt`, with the comparison that shows the mainnet code is the testnet code apart from the registry address. The deploy script's refusals were shown by dry runs on a fork of mainnet |
 
-What these tests do not cover: a transaction signed by a real Agentic Wallet, Binance's own preview and risk check, and how real people behave. Those need real use of the mainnet deployment, which at the time of writing holds no BNB and has had no borrower.
+What these tests do not cover: a transaction signed by a real Agentic Wallet, Binance's own preview and risk check, and how real people behave. Those need real use of the mainnet deployment. The first came on 25 November 2026: the team's own Agent ID borrowed and repaid through Binance AI Pro (`security/outputs/mainnet-first-use-2026-11-25.txt`). Use by outside holders is not covered yet.
 
 ### Would the tests notice if a rule were broken?
 

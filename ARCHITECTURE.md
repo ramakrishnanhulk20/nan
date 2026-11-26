@@ -73,7 +73,7 @@ flowchart TD
 
 The mainnet code is byte for byte the code of the testnet pool below, apart from the registry address it reads; the record is `security/outputs/mainnet-2026-11-24.txt`.
 
-Agent ID exists on mainnet only. The testnet registry is a stand-in deployed from the real registry's verified source, with the same name lengths (3 to 20) and owned by a testnet-only wallet so that test names can be issued. The testnet pool runs with a 1 hour term and a pace of 24 a day, so that the attack scripts can exhaust the pace and reach a late payment in a day; the mainnet pool is planned with a 3 day term and a pace of 100 a day. The record of the testnet run is in `security/outputs/`.
+Agent ID exists on mainnet only. The testnet registry is a stand-in deployed from the real registry's verified source, with the same name lengths (3 to 20) and owned by a testnet-only wallet so that test names can be issued. The testnet pool runs with a 1 hour term and a pace of 24 a day, so that the attack scripts can exhaust the pace and reach a late payment in a day; the mainnet pool started with a 3 day term and a pace of 100 a day, and `settings()` on the pool gives the values in force. The record of the testnet run is in `security/outputs/`.
 
 To check a deployment yourself, run `forge script script/Check.s.sol --rpc-url <a public node>` from `packages/contracts`. It sends nothing and needs no key. It reads the address from `deployments/<chain id>.json` and the facts from the chain: the registry the pool reads, its owner, its four settings, whether it is paused and whether a change is scheduled. On mainnet it fails unless the pool reads the real Agent ID registry, and it says whether the settings are still the ones in `script/Plan.sol`.
 
